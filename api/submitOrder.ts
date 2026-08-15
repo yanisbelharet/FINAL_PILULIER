@@ -84,16 +84,19 @@ export default async function handler(req, res) {
     const { name, phone, wilaya, commune, deliveryType, price, eventId, productId, productName, productPrice } = req.body;
       
     // Save order to Firestore
+    let orderId = "";
     try {
-      await addDoc(collection(db, "orders"), {
+      const docRef = await addDoc(collection(db, "orders"), {
         name,
         phone,
         wilaya,
         commune,
         deliveryType,
         price,
+        status: "new",
         createdAt: serverTimestamp()
       });
+      orderId = docRef.id;
     } catch (err) {
       console.error("Error saving order to Firestore:", err);
     }
@@ -106,7 +109,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, warning: "Telegram not configured" });
     }
 
-    const text = `🛒 *طلبية جديدة!*\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
+    const text = `🛒 *طلبية جديدة!*\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج\n\n📊 *Statut :* 🆕 Nouvelle commande`;
+
+    const replyMarkup = orderId ? {
+      inline_keyboard: [
+        [{ text: "📊 Modifier le statut", callback_data: `menu:${orderId}` }]
+      ]
+    } : undefined;
 
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
@@ -117,6 +126,7 @@ export default async function handler(req, res) {
         chat_id: chatId,
         text: text,
         parse_mode: "Markdown",
+        reply_markup: replyMarkup
       }),
     });
 

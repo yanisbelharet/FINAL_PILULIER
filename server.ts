@@ -425,8 +425,9 @@ const wilayaMap: Record<string, string> = {
       const displayId = String(nextOrderNumber).padStart(2, '0');
 
       // Save order to Firestore
+      let orderId = "";
       try {
-        await addDoc(collection(db, "orders"), {
+        const docRef = await addDoc(collection(db, "orders"), {
           name,
           phone,
           wilaya,
@@ -438,8 +439,10 @@ const wilayaMap: Record<string, string> = {
           createdAt: serverTimestamp(),
           orderNumber: nextOrderNumber,
           displayId,
-          sheetSynced: false
+          sheetSynced: false,
+          status: "new"
         });
+        orderId = docRef.id;
       } catch (err) {
         console.error("Error saving order to Firestore:", err);
       }
@@ -541,7 +544,13 @@ const wilayaMap: Record<string, string> = {
       }
 
       const dateStr = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Algiers' });
-      const text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
+      const text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج\n\n📊 *Statut :* 🆕 Nouvelle commande`;
+
+      const replyMarkup = orderId ? {
+        inline_keyboard: [
+          [{ text: "📊 Modifier le statut", callback_data: `menu:${orderId}` }]
+        ]
+      } : undefined;
 
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",
@@ -552,6 +561,7 @@ const wilayaMap: Record<string, string> = {
           chat_id: chatId,
           text: text,
           parse_mode: "Markdown",
+          reply_markup: replyMarkup
         }),
       });
 

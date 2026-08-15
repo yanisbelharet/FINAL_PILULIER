@@ -1,0 +1,38 @@
+{
+  "collections": [
+    {
+      "name": "config",
+      "description": "Application settings (pixels, price).",
+      "rules": "allow read: if true; allow write: if false;",
+      "documents": [
+        {
+          "id": "main",
+          "fields": [
+            { "name": "productPrice", "type": "number", "description": "Product price in DZD" },
+            { "name": "fbPixelId", "type": "string", "description": "Facebook Pixel ID" },
+            { "name": "tiktokPixelId", "type": "string", "description": "TikTok Pixel ID" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "orders",
+      "description": "Customer orders.",
+      "rules": "allow read, write: if false;",
+      "documents": [
+        {
+          "id": "{orderId}",
+          "fields": [
+            { "name": "name", "type": "string" },
+            { "name": "phone", "type": "string" },
+            { "name": "wilaya", "type": "string" },
+            { "name": "commune", "type": "string" },
+            { "name": "deliveryType", "type": "string" },
+            { "name": "price", "type": "number" },
+            { "name": "createdAt", "type": "timestamp" }
+          ]
+        }
+      ]
+    }
+  ]
+}

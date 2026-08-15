@@ -1,0 +1,19 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -4,6 +4,7 @@
+ import Dashboard from './Dashboard';
+ import { db } from './firebase';
+ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
++import NotFound from './NotFound';
+ 
+ export default function App() {
+   const [config, setConfig] = useState<{
+@@ -62,7 +63,7 @@
+       <Routes>
+         <Route path="/" element={<LandingPage productPrice={config.productPrice} onPurchase={handlePurchase} />} />
+         <Route path="/admin" element={<Dashboard />} />
+-        <Route path="*" element={<Navigate to="/" />} />
++        <Route path="*" element={<NotFound />} />
+       </Routes>
+     </Router>
+   );

@@ -486,7 +486,6 @@ const wilayaMap: Record<string, string> = {
               pixel_code: pixel,
               event: "CompletePayment",
               event_id: finalEventId,
-              test_event_code: "TEST80955",
               timestamp: new Date().toISOString(),
               context: {
                 ip: clientIp,
@@ -506,7 +505,6 @@ const wilayaMap: Record<string, string> = {
             console.log("pixel_code:", pixel);
             console.log("event:", ttPayload.event);
             console.log("event_id:", ttPayload.event_id);
-            console.log("test_event_code:", ttPayload.test_event_code);
 
             fetch(tiktokUrl, {
               method: 'POST',
@@ -541,13 +539,7 @@ const wilayaMap: Record<string, string> = {
       }
 
       const dateStr = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Algiers' });
-      const text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج\n\n📊 *Statut :* 🆕 Nouvelle commande`;
-
-      const replyMarkup = {
-        inline_keyboard: [
-          [{ text: "📊 Statut", callback_data: "menu" }]
-        ]
-      };
+      const text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
 
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",
@@ -557,8 +549,7 @@ const wilayaMap: Record<string, string> = {
         body: JSON.stringify({
           chat_id: chatId,
           text: text,
-          parse_mode: "Markdown",
-          reply_markup: replyMarkup
+          parse_mode: "Markdown"
         }),
       });
 

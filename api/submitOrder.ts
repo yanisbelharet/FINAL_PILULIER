@@ -106,13 +106,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, warning: "Telegram not configured" });
     }
 
-    const text = `🛒 *طلبية جديدة!*\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج\n\n📊 *Statut :* 🆕 Nouvelle commande`;
-
-    const replyMarkup = {
-      inline_keyboard: [
-        [{ text: "📊 Statut", callback_data: "menu" }]
-      ]
-    };
+    const text = `🛒 *طلبية جديدة!*\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
 
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
@@ -122,8 +116,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         chat_id: chatId,
         text: text,
-        parse_mode: "Markdown",
-        reply_markup: replyMarkup
+        parse_mode: "Markdown"
       }),
     });
 
@@ -166,7 +159,6 @@ export default async function handler(req, res) {
             pixel_code: pixel,
             event: "CompletePayment",
             event_id: eventId,
-            test_event_code: "TEST80955",
             timestamp: new Date().toISOString(),
             context: {
               ip: clientIp,
@@ -191,7 +183,6 @@ export default async function handler(req, res) {
           console.log("[TIKTOK CAPI] START");
           console.log("[TIKTOK CAPI] event:", "CompletePayment");
           console.log("[TIKTOK CAPI] event_id:", eventId);
-          console.log("[TIKTOK CAPI] test_event_code:", "TEST80955");
 
           console.log("[TIKTOK CAPI] BEFORE FETCH");
           try {

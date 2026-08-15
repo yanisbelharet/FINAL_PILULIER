@@ -50,7 +50,8 @@ export default function LandingPageV3({ config, onPurchase }: { config: any, onP
       
       // Hide sticky button when the actual checkout form is visible on screen
       if (checkoutForm && shouldShow) {
-        if (checkoutForm.getBoundingClientRect().top < window.innerHeight) {
+        const rect = checkoutForm.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
           shouldShow = false;
         }
       }
@@ -109,19 +110,19 @@ export default function LandingPageV3({ config, onPurchase }: { config: any, onP
       <motion.div 
         initial={{ y: 100 }}
         animate={{ y: showStickyButton ? 0 : 100 }}
-        className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] z-50 flex justify-center items-center gap-4"
+        className="fixed bottom-6 left-0 right-0 z-50 flex justify-center items-center pointer-events-none"
       >
-        <div className="w-full max-w-2xl mx-auto flex items-center justify-center px-2">
+        <div className="w-full max-w-2xl mx-auto flex items-center justify-center">
           <a 
             href="#checkout" 
-            className="flex items-center justify-center gap-[23px] w-[300px] m-[10px] py-[5px] px-[5px] rounded-[30px] border-4 border-solid border-[#7ED321] transition-all animate-horizontal-bounce shadow-[0_0_0_0_black]"
+            className="pointer-events-auto flex items-center justify-center gap-[23px] w-[300px] py-[8px] px-[5px] rounded-[30px] border-4 border-solid border-[#7ED321] transition-all animate-horizontal-bounce shadow-2xl"
             style={{
               background: 'linear-gradient(45deg, #417505 0%, #7ED321 100%)',
               color: '#FFFFFF'
             }}
           >
-            <ShoppingCart size={15} color="#FFFFFF" />
-            <span style={{ fontSize: '17px', fontWeight: 'bold' }}>أطلب الآن</span>
+            <ShoppingCart size={18} color="#FFFFFF" />
+            <span style={{ fontSize: '18px', fontWeight: 'bold' }}>أطلب الآن</span>
           </a>
         </div>
       </motion.div>

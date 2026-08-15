@@ -491,8 +491,6 @@ export default function LandingPage({ config, onPurchase }: { config: any, onPur
       const checkoutForm = document.getElementById('checkout');
       
       let pastHero = false;
-      let beforeCheckout = true;
-
       if (heroCta) {
         pastHero = heroCta.getBoundingClientRect().bottom < 0;
       } else {
@@ -500,10 +498,12 @@ export default function LandingPage({ config, onPurchase }: { config: any, onPur
       }
 
       if (checkoutForm) {
-        beforeCheckout = checkoutForm.getBoundingClientRect().top > window.innerHeight;
+        const rect = checkoutForm.getBoundingClientRect();
+        const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
+        setShowStickyButton(pastHero && !inViewport);
+      } else {
+        setShowStickyButton(pastHero);
       }
-      
-      setShowStickyButton(pastHero && beforeCheckout);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });

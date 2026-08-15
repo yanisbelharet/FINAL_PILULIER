@@ -168,7 +168,13 @@ export default async function handler(req, res) {
               ...(hashedPhone ? { user: { phone_number: hashedPhone } } : {})
             },
             properties: {
-              contents: [{ price: basePrice, quantity: 1 }],
+              contents: [{
+                content_id: productId || "med-alarm",
+                content_type: "product",
+                content_name: productName || "منبه الدواء الذكي",
+                price: basePrice,
+                quantity: 1
+              }],
               value: basePrice,
               currency: "DZD"
             }

@@ -84,19 +84,16 @@ export default async function handler(req, res) {
     const { name, phone, wilaya, commune, deliveryType, price, eventId, productId, productName, productPrice } = req.body;
       
     // Save order to Firestore
-    let orderId = "";
     try {
-      const docRef = await addDoc(collection(db, "orders"), {
+      await addDoc(collection(db, "orders"), {
         name,
         phone,
         wilaya,
         commune,
         deliveryType,
         price,
-        status: "new",
         createdAt: serverTimestamp()
       });
-      orderId = docRef.id;
     } catch (err) {
       console.error("Error saving order to Firestore:", err);
     }
@@ -109,13 +106,20 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, warning: "Telegram not configured" });
     }
 
-    const text = `🛒 *طلبية جديدة!*\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج\n\n📊 *Statut :* 🆕 Nouvelle commande`;
+    const text = `🛒 *طلبية جديدة!*\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
 
-    const replyMarkup = orderId ? {
+    const replyMarkup = {
       inline_keyboard: [
-        [{ text: "📊 Modifier le statut", callback_data: `menu:${orderId}` }]
+        [{ text: "🆕 Nouvelle commande", callback_data: "ignore" }, { text: "❌ Non-validé", callback_data: "ignore" }],
+        [{ text: "📞 Validé par téléphone", callback_data: "ignore" }, { text: "✅ Confirmé", callback_data: "ignore" }],
+        [{ text: "📦 Expédié", callback_data: "ignore" }, { text: "❌ Annulé", callback_data: "ignore" }],
+        [{ text: "🔄 Reporté", callback_data: "ignore" }, { text: "🚚 Livré", callback_data: "ignore" }],
+        [{ text: "🔁 RPN PAS 1", callback_data: "ignore" }, { text: "🔁 RPN PAS 2", callback_data: "ignore" }],
+        [{ text: "🔁 RPN PAS 3", callback_data: "ignore" }, { text: "📵 Non joinable", callback_data: "ignore" }],
+        [{ text: "🔴 Racrouche", callback_data: "ignore" }, { text: "⏳ En attente", callback_data: "ignore" }],
+        [{ text: "📞 A rappeler", callback_data: "ignore" }, { text: "⚠️ Risque élevé", callback_data: "ignore" }]
       ]
-    } : undefined;
+    };
 
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",

@@ -106,18 +106,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, warning: "Telegram not configured" });
     }
 
-    const text = `🛒 *طلبية جديدة!*\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
+    const text = `🛒 *طلبية جديدة!*\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج\n\n📊 *Statut :* 🆕 Nouvelle commande`;
 
     const replyMarkup = {
       inline_keyboard: [
-        [{ text: "🆕 Nouvelle commande", callback_data: "ignore" }, { text: "❌ Non-validé", callback_data: "ignore" }],
-        [{ text: "📞 Validé par téléphone", callback_data: "ignore" }, { text: "✅ Confirmé", callback_data: "ignore" }],
-        [{ text: "📦 Expédié", callback_data: "ignore" }, { text: "❌ Annulé", callback_data: "ignore" }],
-        [{ text: "🔄 Reporté", callback_data: "ignore" }, { text: "🚚 Livré", callback_data: "ignore" }],
-        [{ text: "🔁 RPN PAS 1", callback_data: "ignore" }, { text: "🔁 RPN PAS 2", callback_data: "ignore" }],
-        [{ text: "🔁 RPN PAS 3", callback_data: "ignore" }, { text: "📵 Non joinable", callback_data: "ignore" }],
-        [{ text: "🔴 Racrouche", callback_data: "ignore" }, { text: "⏳ En attente", callback_data: "ignore" }],
-        [{ text: "📞 A rappeler", callback_data: "ignore" }, { text: "⚠️ Risque élevé", callback_data: "ignore" }]
+        [{ text: "📊 Statut", callback_data: "menu" }]
       ]
     };
 

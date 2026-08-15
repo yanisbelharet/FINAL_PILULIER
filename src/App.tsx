@@ -157,8 +157,10 @@ export default function App() {
   useEffect(() => {
     // track visit once per session
     if (!sessionStorage.getItem('visitTracked')) {
-      fetch('/api/track-visit', { method: 'POST' }).catch(() => {});
-      sessionStorage.setItem('visitTracked', 'true');
+      setTimeout(() => {
+        fetch('/api/track-visit', { method: 'POST' }).catch(() => {});
+        sessionStorage.setItem('visitTracked', 'true');
+      }, 3000); // Deferred execution
     }
   }, []);
 

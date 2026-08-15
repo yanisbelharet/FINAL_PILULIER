@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ShoppingCart } from 'lucide-react';
-import { CheckoutForm, Testimonials } from './LandingPage';
+
+const CheckoutForm = lazy(() => import('./CheckoutForm'));
+const Testimonials = lazy(() => import('./Testimonials'));
 
 // Images hébergées directement sur le CDN YouCan (plus besoin de les inclure dans le bundle)
 const img1 = 'https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/HxVCmxikiwh6FWU4vOJ9898xYRoXH5n8uTCqLIP3.webp';
@@ -83,20 +85,24 @@ export default function LandingPageV3({ config, onPurchase }: { config: any, onP
         </div>
 
         {/* 3. Images List */}
-        <img src={img2} alt="Product details" className="w-full object-cover" loading="lazy" />
-        <img src={img3} alt="Product details" className="w-full object-cover mt-2" loading="lazy" />
-        <img src={img4} alt="Product details" className="w-full object-cover mt-2" loading="lazy" />
-        <img src={img5} alt="Product details" className="w-full object-cover mt-2" loading="lazy" />
+        <img src={img2} alt="Product details" className="w-full object-cover" loading="lazy" decoding="async" />
+        <img src={img3} alt="Product details" className="w-full object-cover mt-2" loading="lazy" decoding="async" />
+        <img src={img4} alt="Product details" className="w-full object-cover mt-2" loading="lazy" decoding="async" />
+        <img src={img5} alt="Product details" className="w-full object-cover mt-2" loading="lazy" decoding="async" />
 
         {/* 4. Checkout Form */}
         <section id="checkout" className="py-8 bg-white px-4 border-t border-slate-100 mt-4">
           <div className="max-w-xl mx-auto">
-            <CheckoutForm product={product} promoActive={config.promoActive} promoText={config.promoText} onPurchase={onPurchase} />
+            <Suspense fallback={<div className="p-8 text-center text-slate-500">جاري تحميل الاستمارة...</div>}>
+              <CheckoutForm product={product} promoActive={config.promoActive} promoText={config.promoText} onPurchase={onPurchase} />
+            </Suspense>
           </div>
         </section>
 
         {/* 5. Reviews */}
-        <Testimonials />
+        <Suspense fallback={<div className="p-8 text-center text-slate-500">جاري تحميل الآراء...</div>}>
+          <Testimonials />
+        </Suspense>
       </div>
 
       {/* Sticky Bottom CTA */}

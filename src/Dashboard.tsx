@@ -894,7 +894,7 @@ export default function Dashboard() {
                                 </div>
                               </td>
                               <td className="p-4">
-                                <div className="font-bold text-slate-700 text-sm">{order.productName || 'Produit par défaut'}</div>
+                                <div className="font-bold text-slate-700 text-sm">{order.productName || 'Produit par défaut'} <span className="text-rose-500 font-black">(x{order.quantity || 1})</span></div>
                               </td>
                               
                               <td className="p-4">

@@ -81,7 +81,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { name, phone, wilaya, commune, deliveryType, price, eventId, productId, productName, productPrice } = req.body;
+    const { name, phone, wilaya, commune, deliveryType, price, eventId, productId, productName, productPrice, quantity } = req.body;
       
     // Save order to Firestore
     try {
@@ -106,7 +106,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, warning: "Telegram not configured" });
     }
 
-    const text = `🛒 *طلبية جديدة!*\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
+    const text = `🛒 *طلبية جديدة!*\n📦 *الكمية:* ${quantity || 1}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
 
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",

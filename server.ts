@@ -406,7 +406,7 @@ const wilayaMap: Record<string, string> = {
   app.post("/api/submitOrder", async (req, res) => {
     console.log("[ORDER] submitOrder started");
     try {
-      const { name, phone, wilaya, commune, deliveryType, price, productId, productName, eventId } = req.body;
+      const { name, phone, wilaya, commune, deliveryType, price, productId, productName, eventId, quantity } = req.body;
       
       let nextOrderNumber = 1;
       let configData: any = {};
@@ -435,6 +435,7 @@ const wilayaMap: Record<string, string> = {
           price,
           productId: productId || 'med-alarm',
           productName: productName || 'منبه الدواء الذكي',
+          quantity: quantity || 1,
           createdAt: serverTimestamp(),
           orderNumber: nextOrderNumber,
           displayId,
@@ -539,7 +540,7 @@ const wilayaMap: Record<string, string> = {
       }
 
       const dateStr = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Algiers' });
-      const text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
+      const text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n📦 *الكمية:* ${quantity || 1}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
 
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",

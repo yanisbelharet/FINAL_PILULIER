@@ -27,8 +27,7 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
 
   const wilayaPrice = formData.wilaya ? DELIVERY_PRICES[formData.wilaya] : null;
   const deliveryPrice = wilayaPrice ? wilayaPrice[formData.deliveryType] : 0;
-  const productsCost = formData.quantity > 1 ? (productPrice * formData.quantity) - 1000 : productPrice;
-  const totalPrice = productsCost + deliveryPrice;
+  const totalPrice = productPrice + deliveryPrice;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,46 +96,6 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
       </div>
       
       <div className="space-y-4">
-
-        <div className="mb-4 space-y-3">
-          <label className={`flex items-center justify-between p-4 cursor-pointer transition-all border-2 rounded-xl ${formData.quantity === 1 ? 'border-[#417505] bg-emerald-50/30 shadow-sm' : 'border-[#cbd5e1] bg-white hover:border-[#94a3b8]'}`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.quantity === 1 ? 'border-[#417505]' : 'border-[#cbd5e1]'}`}>
-                {formData.quantity === 1 && <div className="w-2.5 h-2.5 bg-[#417505] rounded-full" />}
-              </div>
-              <span className={`font-bold text-[15px] ${formData.quantity === 1 ? 'text-[#417505]' : 'text-slate-700'}`}>شراء واحدة: {productPrice} د.ج</span>
-            </div>
-            <input 
-              type="radio" 
-              name="quantity" 
-              value={1} 
-              checked={formData.quantity === 1}
-              onChange={() => setFormData({...formData, quantity: 1})}
-              className="hidden"
-            />
-          </label>
-          <label className={`flex items-center justify-between p-4 cursor-pointer transition-all border-2 rounded-xl ${formData.quantity === 2 ? 'border-[#417505] bg-emerald-50/30 shadow-sm' : 'border-[#cbd5e1] bg-white hover:border-[#94a3b8]'}`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.quantity === 2 ? 'border-[#417505]' : 'border-[#cbd5e1]'}`}>
-                {formData.quantity === 2 && <div className="w-2.5 h-2.5 bg-[#417505] rounded-full" />}
-              </div>
-              <div className="flex flex-col">
-                <span className={`font-bold text-[15px] ${formData.quantity === 2 ? 'text-[#417505]' : 'text-slate-700'}`}>
-                  اثنتين: {productPrice * 2 - 1000} د.ج <span className="line-through text-slate-400 text-xs font-normal mr-1">(بدل {productPrice * 2} د.ج)</span>
-                </span>
-                <span className="text-rose-600 text-xs font-black mt-1">وفر 1000 د.ج - العرض الأكثر طلباً 🔥</span>
-              </div>
-            </div>
-            <input 
-              type="radio" 
-              name="quantity" 
-              value={2} 
-              checked={formData.quantity === 2}
-              onChange={() => setFormData({...formData, quantity: 2})}
-              className="hidden"
-            />
-          </label>
-        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="relative">

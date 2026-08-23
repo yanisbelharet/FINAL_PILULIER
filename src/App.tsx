@@ -56,6 +56,7 @@ export default function App() {
     tiktokAccessToken: string;
     googleAdsId: string;
     googleAdsLabel: string;
+    ga4MeasurementId?: string;
     timerEnabled: boolean;
     timerHours: number;
     products: any[];
@@ -71,6 +72,7 @@ export default function App() {
     tiktokAccessToken: "",
     googleAdsId: "",
     googleAdsLabel: "",
+    ga4MeasurementId: "",
     timerEnabled: true,
     timerHours: 24,
     products: defaultProducts
@@ -146,16 +148,19 @@ export default function App() {
       }
 
       // Inject TikTok Pixel
-      if (config.googleAdsId) {
+      // Inject Google Analytics / Ads
+      if (config.googleAdsId || config.ga4MeasurementId) {
+        const gtagId = config.ga4MeasurementId || config.googleAdsId;
         const script = document.createElement('script');
         script.async = true;
-        script.src = `https://www.googletagmanager.com/gtag/js?id=${config.googleAdsId}`;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${gtagId}`;
         document.head.appendChild(script);
         
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', config.googleAdsId);
+        if (config.googleAdsId) gtag('config', config.googleAdsId);
+        if (config.ga4MeasurementId) gtag('config', config.ga4MeasurementId);
       }
       
       if (config.tiktokPixelId) {

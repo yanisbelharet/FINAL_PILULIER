@@ -525,6 +525,54 @@ const wilayaMap: Record<string, string> = {
             });
           }
         }
+        
+        // Google Analytics 4 (Measurement Protocol) Server-Side for Google Ads
+        if (configData.ga4MeasurementId && configData.ga4ApiSecret) {
+          try {
+            const cookies = req.headers.cookie || '';
+            let gaClientId = crypto.randomUUID(); // Fallback
+            const gaCookieMatch = cookies.match(/_ga=(.+?)(?:;|$)/);
+            if (gaCookieMatch) {
+              const parts = gaCookieMatch[1].split('.');
+              if (parts.length >= 2) {
+                gaClientId = parts.slice(-2).join('.');
+              }
+            }
+            
+            const ga4Payload = {
+              client_id: gaClientId,
+              user_data: {
+                sha256_phone_number: phoneHash
+              },
+              events: [{
+                name: "purchase",
+                params: {
+                  currency: "DZD",
+                  value: Number(price),
+                  transaction_id: finalEventId,
+                  items: [{
+                    item_id: productId || 'med-alarm',
+                    item_name: productName || 'منتج',
+                    price: Number(price),
+                    quantity: quantity || 1
+                  }]
+                }
+              }]
+            };
+
+            const ga4Url = `https://www.google-analytics.com/mp/collect?measurement_id=${configData.ga4MeasurementId}&api_secret=${configData.ga4ApiSecret}`;
+            fetch(ga4Url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(ga4Payload)
+            })
+            .then(r => console.log("[GA4] Measurement Protocol HTTP status:", r.status))
+            .catch(e => console.error("GA4 MP Error", e));
+          } catch (e) {
+            console.error("GA4 Parsing Error", e);
+          }
+        }
+
       } catch (err) {
         console.error("CAPI error:", err);
       }

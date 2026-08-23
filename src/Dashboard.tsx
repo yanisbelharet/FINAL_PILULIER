@@ -23,6 +23,8 @@ export default function Dashboard() {
     tiktokAccessToken: '',
     googleAdsId: '',
     googleAdsLabel: '',
+    ga4MeasurementId: '',
+    ga4ApiSecret: '',
     timerEnabled: true,
     timerHours: 24,
     products: []
@@ -1467,6 +1469,31 @@ export default function Dashboard() {
                           onChange={(e) => setConfig({...config, googleAdsLabel: e.target.value})}
                           className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-mono text-sm"
                           placeholder="ex: AbCdEfGhIjK"
+                        />
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100">
+                        <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Tag size={18} className="text-blue-500" /> Google Analytics 4 (Server-Side)</h4>
+                        <p className="text-xs text-slate-500 mb-4">Envoyez les achats via Measurement Protocol pour contourner les bloqueurs de pub.</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">ID de mesure GA4 (G-XXXXXXX)</label>
+                        <input 
+                          type="text" 
+                          value={config.ga4MeasurementId || ''}
+                          onChange={(e) => setConfig({...config, ga4MeasurementId: e.target.value})}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-mono text-sm"
+                          placeholder="ex: G-1234567890"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Secret d'API GA4 (API Secret)</label>
+                        <input 
+                          type="text" 
+                          value={config.ga4ApiSecret || ''}
+                          onChange={(e) => setConfig({...config, ga4ApiSecret: e.target.value})}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-mono text-sm"
+                          placeholder="ex: abcdefgh_1234567890"
                         />
                       </div>
                     </div>

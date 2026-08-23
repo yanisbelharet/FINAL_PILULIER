@@ -239,6 +239,22 @@ export default function App() {
           'transaction_id': eventId
       });
     }
+
+    if (config?.ga4MeasurementId && typeof window !== 'undefined') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){window.dataLayer.push(arguments);}
+      gtag('event', 'purchase', {
+        currency: 'DZD',
+        value: price,
+        transaction_id: eventId,
+        items: [{
+          item_id: product.id,
+          item_name: product.name,
+          price: price,
+          quantity: 1
+        }]
+      });
+    }
   };
 
 

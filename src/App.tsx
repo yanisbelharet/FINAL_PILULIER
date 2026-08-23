@@ -69,8 +69,6 @@ export default function App() {
     tiktokPixelId: "",
     fbAccessToken: "",
     tiktokAccessToken: "",
-          googleAdsId: "",
-           googleAdsLabel: "",
     googleAdsId: "",
     googleAdsLabel: "",
     timerEnabled: true,
@@ -210,6 +208,30 @@ export default function App() {
         currency: 'DZD'
       }, {
         event_id: eventId
+      });
+    }
+
+    if (config?.googleAdsId && config?.googleAdsLabel && typeof window !== 'undefined') {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){window.dataLayer.push(arguments);}
+      
+      if (formData && formData.phone) {
+        let phone = String(formData.phone).trim();
+        if (phone.startsWith('0')) {
+          phone = '+213' + phone.substring(1);
+        } else if (!phone.startsWith('+')) {
+          phone = '+213' + phone;
+        }
+        gtag('set', 'user_data', {
+          "phone_number": phone
+        });
+      }
+
+      gtag('event', 'conversion', {
+          'send_to': `${config.googleAdsId}/${config.googleAdsLabel}`,
+          'value': price,
+          'currency': 'DZD',
+          'transaction_id': eventId
       });
     }
   };

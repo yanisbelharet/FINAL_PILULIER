@@ -21,6 +21,8 @@ export default function Dashboard() {
     tiktokPixelId: '',
     fbAccessToken: '',
     tiktokAccessToken: '',
+    googleAdsId: '',
+    googleAdsLabel: '',
     timerEnabled: true,
     timerHours: 24,
     products: []
@@ -1441,6 +1443,30 @@ export default function Dashboard() {
                           onChange={(e) => setConfig({...config, tiktokAccessToken: e.target.value})}
                           className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-mono text-sm"
                           placeholder="Token d'accès TikTok Events API"
+                        />
+                      </div>
+                      
+                      <div className="pt-4 border-t border-slate-100">
+                        <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Tag size={18} className="text-blue-500" /> Google Ads Tracking</h4>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Google Ads ID (AW-XXXXXXX)</label>
+                        <input 
+                          type="text" 
+                          value={config.googleAdsId || ''}
+                          onChange={(e) => setConfig({...config, googleAdsId: e.target.value})}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-mono text-sm"
+                          placeholder="ex: AW-17988418716"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Google Ads Conversion Label <span className="text-slate-400 font-normal">(Label pour l'évènement Purchase)</span></label>
+                        <input 
+                          type="text" 
+                          value={config.googleAdsLabel || ''}
+                          onChange={(e) => setConfig({...config, googleAdsLabel: e.target.value})}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all font-mono text-sm"
+                          placeholder="ex: AbCdEfGhIjK"
                         />
                       </div>
                     </div>

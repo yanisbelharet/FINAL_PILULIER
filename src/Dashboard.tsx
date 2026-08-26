@@ -739,6 +739,7 @@ export default function Dashboard() {
                           <th className="p-4 font-bold text-slate-600 text-sm">Téléphone</th>
                           <th className="p-4 font-bold text-slate-600 text-sm">Wilaya</th>
                           <th className="p-4 font-bold text-slate-600 text-sm">Prix (DA)</th>
+                          <th className="p-4 font-bold text-slate-600 text-sm">Source</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -753,6 +754,7 @@ export default function Dashboard() {
                             <td className="p-4 font-mono text-slate-600">{order.phone}</td>
                             <td className="p-4 text-sm text-slate-600">{order.wilaya}</td>
                             <td className="p-4 font-black text-emerald-600">{order.price}</td>
+                            <td className="p-4 text-xs font-bold text-slate-500">{order.source || 'Direct / Libre'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -798,6 +800,7 @@ export default function Dashboard() {
                             <th className="p-4 font-bold text-slate-600 text-sm">Wilaya / Commune</th>
                             <th className="p-4 font-bold text-slate-600 text-sm">Livraison</th>
                             <th className="p-4 font-bold text-slate-600 text-sm">Prix (DA)</th>
+                            <th className="p-4 font-bold text-slate-600 text-sm">Source</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -817,6 +820,7 @@ export default function Dashboard() {
                                 </span>
                               </td>
                               <td className="p-4 font-black text-emerald-600">{order.price}</td>
+                              <td className="p-4 text-xs font-bold text-slate-500">{order.source || 'Direct / Libre'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -878,6 +882,7 @@ export default function Dashboard() {
                           <th className="p-4 font-bold text-slate-600 text-sm">Client / Contact</th>
                           <th className="p-4 font-bold text-slate-600 text-sm">Produit</th>
                           <th className="p-4 font-bold text-slate-600 text-sm">Lieu & Prix</th>
+                          <th className="p-4 font-bold text-slate-600 text-sm">Source</th>
                           <th className="p-4 font-bold text-slate-600 text-sm">Statut</th>
                           <th className="p-4 font-bold text-slate-600 text-sm text-right">Actions</th>
                         </tr>
@@ -916,6 +921,10 @@ export default function Dashboard() {
                                     className="text-xs px-2 py-1 bg-slate-50 border border-slate-200 rounded focus:ring-1 focus:ring-indigo-500 w-full"
                                   />
                                 </div>
+                              </td>
+
+                              <td className="p-4 text-xs font-bold text-slate-500 whitespace-nowrap">
+                                {order.source || 'Direct / Libre'}
                               </td>
 
                               <td className="p-4">

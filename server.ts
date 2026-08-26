@@ -406,7 +406,7 @@ const wilayaMap: Record<string, string> = {
   app.post("/api/submitOrder", async (req, res) => {
     console.log("[ORDER] submitOrder started");
     try {
-      const { name, phone, wilaya, commune, deliveryType, price, productId, productName, eventId, quantity } = req.body;
+      const { name, phone, wilaya, commune, deliveryType, price, productId, productName, eventId, quantity, source } = req.body;
       
       let nextOrderNumber = 1;
       let configData: any = {};
@@ -436,6 +436,7 @@ const wilayaMap: Record<string, string> = {
           productId: productId || 'med-alarm',
           productName: productName || 'منبه الدواء الذكي',
           quantity: quantity || 1,
+          source: source || 'Direct / Libre',
           createdAt: serverTimestamp(),
           orderNumber: nextOrderNumber,
           displayId,

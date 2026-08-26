@@ -258,6 +258,21 @@ export const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { 
     
     const eventId = `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
+    const getOrderSource = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('gclid')) return 'Google Ads';
+      if (urlParams.has('ttclid')) return 'TikTok Ads';
+      if (urlParams.has('fbclid')) return 'Facebook Ads';
+      const utmSource = urlParams.get('utm_source');
+      if (utmSource) return utmSource;
+      const ref = document.referrer.toLowerCase();
+      if (ref.includes('tiktok.com')) return 'TikTok Organic';
+      if (ref.includes('google.')) return 'Google Organic';
+      if (ref.includes('facebook.com') || ref.includes('instagram.com')) return 'Facebook/Insta Organic';
+      return 'Direct / Libre';
+    };
+
+
     try {
       const response = await fetch('/api/submitOrder', {
         method: 'POST',
@@ -269,7 +284,8 @@ export const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { 
           price: totalPrice,
           productId: product.id,
           productName: product.name,
-          eventId
+          eventId,
+          source: getOrderSource()
         }),
       });
       

@@ -27,7 +27,7 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
 
   const wilayaPrice = formData.wilaya ? DELIVERY_PRICES[formData.wilaya] : null;
   const deliveryPrice = wilayaPrice ? wilayaPrice[formData.deliveryType] : 0;
-  const totalPrice = productPrice + deliveryPrice;
+  const totalPrice = (productPrice * formData.quantity) + deliveryPrice;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +51,7 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
       });
       
       if (response.ok) {
-        onPurchase(productPrice, product, { ...formData, eventId });
+        onPurchase(totalPrice, product, { ...formData, eventId });
         navigate('/thank-you', {
           state: {
             orderDetails: {
@@ -86,16 +86,38 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
       )}
       
       <div className="mb-4 bg-emerald-50/50 rounded-lg p-3 border border-emerald-100 shadow-sm flex items-center justify-between">
-        <span className="text-sm font-bold text-slate-600">السعر الإجمالي:</span>
+        <span className="text-sm font-bold text-slate-600">السعر:</span>
         <div className="flex items-center gap-3">
           {promoActive && productOldPrice && productOldPrice > productPrice && (
-            <span className="text-sm font-bold text-slate-400 line-through decoration-slate-300 decoration-2">{productOldPrice} د.ج</span>
+            <span className="text-sm font-bold text-slate-400 line-through decoration-slate-300 decoration-2">{productOldPrice * formData.quantity} د.ج</span>
           )}
-          <span className="text-2xl font-black text-[#417505]">{productPrice} د.ج</span>
+          <span className="text-2xl font-black text-[#417505]">{productPrice * formData.quantity} د.ج</span>
         </div>
       </div>
       
       <div className="space-y-4">
+
+        {/* Quantity Selector */}
+        <div className="flex items-center justify-between bg-[#f8fafc] border border-[#cbd5e1] rounded-lg p-3 shadow-sm">
+          <span className="text-sm font-bold text-slate-700">الكمية:</span>
+          <div className="flex items-center gap-3">
+            <button 
+              type="button"
+              onClick={() => setFormData({...formData, quantity: Math.max(1, formData.quantity - 1)})}
+              className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-50 transition-colors"
+            >
+              <span className="text-lg font-medium leading-none">-</span>
+            </button>
+            <span className="text-lg font-black text-slate-800 w-6 text-center">{formData.quantity}</span>
+            <button 
+              type="button"
+              onClick={() => setFormData({...formData, quantity: formData.quantity + 1})}
+              className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-50 transition-colors"
+            >
+              <span className="text-lg font-medium leading-none">+</span>
+            </button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="relative">

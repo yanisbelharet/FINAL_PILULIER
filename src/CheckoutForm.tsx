@@ -51,7 +51,7 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
       });
       
       if (response.ok) {
-        onPurchase(totalPrice, product, { ...formData, eventId });
+        onPurchase(productPrice * formData.quantity, product, { ...formData, eventId });
         navigate('/thank-you', {
           state: {
             orderDetails: {

@@ -13,6 +13,7 @@ console.log("[SERVER] server.ts loaded");
 const defaultConfig = {
   promoActive: true,
   visits: 0,
+  dailyVisits: {},
   productPrice: 2000,
   productOldPrice: 3500,
   fbPixelId: "",
@@ -114,7 +115,13 @@ app.use(cookieParser());
   app.post("/api/config", authMiddleware, async (req, res) => {
     try {
       const currentConfig = await getConfig();
-      const newConfig = { ...currentConfig, ...req.body };
+      // Ensure real-time visitor counts are preserved and never overwritten by client state
+      const newConfig = { 
+        ...currentConfig, 
+        ...req.body,
+        visits: currentConfig.visits ?? 0,
+        dailyVisits: currentConfig.dailyVisits ?? {}
+      };
       await saveConfig(newConfig);
       res.json({ success: true, config: newConfig });
     } catch (error) {
@@ -395,8 +402,32 @@ const wilayaMap: Record<string, string> = {
 
   app.post("/api/track-visit", async (req, res) => {
     try {
-      await setDoc(doc(db, "config", "main"), { visits: increment(1) }, { merge: true });
-      res.json({ success: true });
+      const now = new Date();
+      let dateKey: string;
+      const clientDate = req.body?.clientDate;
+      if (clientDate && typeof clientDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)) {
+        dateKey = clientDate;
+      } else {
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        dateKey = `${year}-${month}-${day}`;
+      }
+
+      const configRef = doc(db, "config", "main");
+      try {
+        await updateDoc(configRef, { 
+          visits: increment(1),
+          [`dailyVisits.${dateKey}`]: increment(1)
+        });
+      } catch (err) {
+        await setDoc(configRef, { 
+          visits: increment(1),
+          dailyVisits: { [dateKey]: 1 }
+        }, { merge: true });
+      }
+
+      res.json({ success: true, dateKey });
     } catch (error) {
       console.error("Error tracking visit:", error);
       res.json({ success: false }); // don't fail hard

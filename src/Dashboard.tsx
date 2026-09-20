@@ -300,7 +300,13 @@ export default function Dashboard() {
     if (isAuthenticated) {
       fetchOrders();
       const interval = setInterval(fetchOrders, 2000); // Poll every 2s
-      return () => clearInterval(interval);
+      const configInterval = setInterval(() => {
+        fetchAuth('/api/config').then(res => res.json()).then(data => setConfig(data)).catch(() => {});
+      }, 15000); // Poll config and visits every 15s
+      return () => {
+        clearInterval(interval);
+        clearInterval(configInterval);
+      };
     } else {
       fetchOrders(); // Initial check
     }
@@ -567,6 +573,56 @@ export default function Dashboard() {
   const totalRevenue = filteredOrders.reduce((acc, order) => acc + (order.price || 0), 0);
   const totalOrders = filteredOrders.length;
 
+  const handleDateFilterChange = (filter: string) => {
+    setDateFilter(filter);
+    fetchAuth('/api/config')
+      .then(res => res.json())
+      .then(data => setConfig(data))
+      .catch(() => {});
+  };
+
+  // Calculate visits for the selected period
+  const getPeriodVisits = () => {
+    const dailyVisits = config?.dailyVisits || {};
+    const now = new Date();
+    const formatYMD = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    if (dateFilter === 'today') {
+      const todayKey = formatYMD(now);
+      return {
+        count: dailyVisits[todayKey] || 0,
+        label: "Visites (Aujourd'hui)"
+      };
+    } else if (dateFilter === 'week') {
+      let weekSum = 0;
+      for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(now.getDate() - i);
+        const k = formatYMD(d);
+        if (typeof dailyVisits[k] === 'number') {
+          weekSum += dailyVisits[k];
+        }
+      }
+      return {
+        count: weekSum,
+        label: "Visites (Cette Semaine)"
+      };
+    } else {
+      return {
+        count: config?.visits || 0,
+        label: "Visites Totales"
+      };
+    }
+  };
+
+  const { count: displayVisits, label: visitLabel } = getPeriodVisits();
+  const conversionRate = displayVisits > 0 ? ((totalOrders / displayVisits) * 100) : 0;
+
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-800" dir="ltr">
       {/* Sidebar */}
@@ -669,9 +725,9 @@ export default function Dashboard() {
                     <p className="text-slate-500 font-medium">Statistiques et état actuel de la boutique</p>
                   </div>
                   <div className="bg-white rounded-lg p-1 border border-slate-200 shadow-sm flex items-center gap-1 self-start md:self-auto">
-                    <button onClick={() => setDateFilter('all')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Tout</button>
-                    <button onClick={() => setDateFilter('week')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'week' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Cette Semaine</button>
-                    <button onClick={() => setDateFilter('today')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'today' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Aujourd'hui</button>
+                    <button onClick={() => handleDateFilterChange('all')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Tout</button>
+                    <button onClick={() => handleDateFilterChange('week')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'week' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Cette Semaine</button>
+                    <button onClick={() => handleDateFilterChange('today')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'today' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Aujourd'hui</button>
                   </div>
                 </div>
 
@@ -680,8 +736,8 @@ export default function Dashboard() {
                     <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
                       <Eye size={24} />
                     </div>
-                    <p className="text-slate-500 font-medium mb-1">Visites Totales</p>
-                    <h3 className="text-3xl font-black text-slate-900">{config.visits}</h3>
+                    <p className="text-slate-500 font-medium mb-1">{visitLabel}</p>
+                    <h3 className="text-3xl font-black text-slate-900">{displayVisits}</h3>
                   </div>
                   
                   <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
@@ -710,14 +766,16 @@ export default function Dashboard() {
                     <div className="flex-1 bg-slate-50 h-4 rounded-full overflow-hidden border border-slate-200">
                       <div 
                         className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500"
-                        style={{ width: `${config.visits > 0 ? Math.min((totalOrders / config.visits) * 100, 100) : 0}%` }}
+                        style={{ width: `${displayVisits > 0 ? Math.min((totalOrders / displayVisits) * 100, 100) : 0}%` }}
                       ></div>
                     </div>
                     <div className="text-sm font-bold text-slate-700 w-16 text-right">
-                      {config.visits > 0 ? ((totalOrders / config.visits) * 100).toFixed(1) : '0'}%
+                      {displayVisits > 0 ? conversionRate.toFixed(1) : '0'}%
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">Taux de conversion (Commandes / Visites)</p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Taux de conversion {dateFilter === 'today' ? "(Aujourd'hui)" : dateFilter === 'week' ? "(Cette Semaine)" : "(Total)"} (Commandes / Visites)
+                  </p>
                 </div>
 
                 <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm mt-8">
@@ -776,9 +834,9 @@ export default function Dashboard() {
                     <p className="text-slate-500 font-medium">{filteredOrders.length} commandes trouvées</p>
                   </div>
                   <div className="bg-white rounded-lg p-1 border border-slate-200 shadow-sm flex items-center gap-1 self-start md:self-auto">
-                    <button onClick={() => setDateFilter('all')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Tout</button>
-                    <button onClick={() => setDateFilter('week')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'week' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Cette Semaine</button>
-                    <button onClick={() => setDateFilter('today')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'today' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Aujourd'hui</button>
+                    <button onClick={() => handleDateFilterChange('all')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Tout</button>
+                    <button onClick={() => handleDateFilterChange('week')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'week' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Cette Semaine</button>
+                    <button onClick={() => handleDateFilterChange('today')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'today' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Aujourd'hui</button>
                   </div>
                 </div>
                 

@@ -226,7 +226,17 @@ export default function App() {
     // track visit once per session in idle time without blocking performance metrics
     if (!sessionStorage.getItem('visitTracked')) {
       const sendTrack = () => {
-        fetch('/api/track-visit', { method: 'POST' }).catch(() => {});
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const clientDate = `${year}-${month}-${day}`;
+
+        fetch('/api/track-visit', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientDate })
+        }).catch(() => {});
         sessionStorage.setItem('visitTracked', 'true');
       };
       

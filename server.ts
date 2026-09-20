@@ -531,7 +531,7 @@ const wilayaMap: Record<string, string> = {
         if (configData.ga4MeasurementId && configData.ga4ApiSecret) {
           try {
             const cookies = req.headers.cookie || '';
-            let gaClientId = crypto.randomUUID(); // Fallback
+            let gaClientId: string = crypto.randomUUID(); // Fallback
             const gaCookieMatch = cookies.match(/_ga=(.+?)(?:;|$)/);
             if (gaCookieMatch) {
               const parts = gaCookieMatch[1].split('.');

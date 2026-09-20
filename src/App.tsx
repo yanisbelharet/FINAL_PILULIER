@@ -1,7 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { db } from './firebase';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 const LandingPage = lazy(() => import('./LandingPage'));
 const LandingPageV2 = lazy(() => import('./LandingPageV2'));
@@ -60,128 +60,180 @@ export default function App() {
     timerEnabled: boolean;
     timerHours: number;
     products: any[];
-  }>({
-    productPrice: 2900,
-    productOldPrice: 4200,
-    promoActive: true,
-    promoText: 'عرض ترويجي محدود!',
-    visits: 0,
-    fbPixelId: "",
-    tiktokPixelId: "",
-    fbAccessToken: "",
-    tiktokAccessToken: "",
-    googleAdsId: "",
-    googleAdsLabel: "",
-    ga4MeasurementId: "",
-    timerEnabled: true,
-    timerHours: 24,
-    products: defaultProducts
+  }>(() => {
+    // Instant cache-first load to avoid layout shift and eliminate network waiting
+    try {
+      const cached = localStorage.getItem('site_config_cache');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {}
+
+    return {
+      productPrice: 2900,
+      productOldPrice: 4200,
+      promoActive: true,
+      promoText: 'عرض ترويجي محدود!',
+      visits: 0,
+      fbPixelId: "",
+      tiktokPixelId: "",
+      fbAccessToken: "",
+      tiktokAccessToken: "",
+      googleAdsId: "",
+      googleAdsLabel: "",
+      ga4MeasurementId: "",
+      timerEnabled: true,
+      timerHours: 24,
+      products: defaultProducts
+    };
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "config", "main"), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        
-        // Merge default products with saved products if necessary
-        let mergedProducts = data.products || defaultProducts;
-        if (data.products) {
-          // Add missing default products to the saved products based on ID
-          const existingIds = new Set(data.products.map((p: any) => p.id));
-          const missingProducts = defaultProducts.filter(p => !existingIds.has(p.id));
+    let isMounted = true;
+    
+    // Use fast single getDoc instead of persistent onSnapshot to prevent long-lived streaming channel latency
+    getDoc(doc(db, "config", "main"))
+      .then((docSnap) => {
+        if (!isMounted) return;
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          let mergedProducts = data.products || defaultProducts;
+          if (data.products) {
+            const existingIds = new Set(data.products.map((p: any) => p.id));
+            const missingProducts = defaultProducts.filter(p => !existingIds.has(p.id));
+            mergedProducts = [...data.products, ...missingProducts];
+          }
 
-          mergedProducts = [...data.products, ...missingProducts];
+          const newConfig = {
+            productPrice: 2900,
+            productOldPrice: 4200,
+            promoActive: true,
+            promoText: 'عرض ترويجي محدود!',
+            visits: 0,
+            fbPixelId: "",
+            tiktokPixelId: "",
+            fbAccessToken: "",
+            tiktokAccessToken: "",
+            timerEnabled: true,
+            timerHours: 24,
+            ...data,
+            products: mergedProducts
+          } as any;
+
+          setConfig(newConfig);
+          try {
+            localStorage.setItem('site_config_cache', JSON.stringify(newConfig));
+          } catch (e) {}
         }
+      })
+      .catch((err) => {
+        console.error("Config fetch error:", err);
+      });
 
-        setConfig({ 
-           productPrice: 2900,
-           productOldPrice: 4200,
-           promoActive: true,
-           promoText: 'عرض ترويجي محدود!',
-           visits: 0,
-           fbPixelId: "",
-           tiktokPixelId: "",
-           fbAccessToken: "",
-           tiktokAccessToken: "",
-           timerEnabled: true,
-           timerHours: 24,
-           ...data,
-           products: mergedProducts
-         } as any);
-
-      } else {
-        setConfig({
-          productPrice: 2900,
-          productOldPrice: 4200,
-          promoActive: true,
-           promoText: 'عرض ترويجي محدود!',
-          visits: 0,
-          fbPixelId: "",
-          tiktokPixelId: "",
-          fbAccessToken: "",
-          tiktokAccessToken: "",
-          timerEnabled: true,
-          timerHours: 24,
-          products: defaultProducts
-        });
-      }
-    });
-    return () => unsub();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (config) {
-      // Inject Facebook Pixel
-      if (config.fbPixelId) {
-        ;(function(f,b,e,v,n,t,s)
-        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-        n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t,s)})(window, document,'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-        
-        const fbPixels = config.fbPixelId.split(',').map(p => p.trim()).filter(Boolean);
-        fbPixels.forEach(p => window.fbq('init', p));
-        window.fbq('track', 'PageView');
-      }
+    if (!config) return;
 
-      // Inject TikTok Pixel
-      // Inject Google Analytics / Ads
-      if (config.googleAdsId || config.ga4MeasurementId) {
-        const gtagId = config.ga4MeasurementId || config.googleAdsId;
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = `https://www.googletagmanager.com/gtag/js?id=${gtagId}`;
-        document.head.appendChild(script);
-        
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        if (config.googleAdsId) gtag('config', config.googleAdsId);
-        if (config.ga4MeasurementId) gtag('config', config.ga4MeasurementId);
-      }
+    // Inject Facebook Pixel (guarded against duplicate script tags)
+    if (config.fbPixelId && !document.getElementById('fb-pixel-script')) {
+      (function(f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
+        if (f.fbq) return;
+        n = f.fbq = function() {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+        };
+        if (!f._fbq) f._fbq = n;
+        n.push = n;
+        n.loaded = !0;
+        n.version = '2.0';
+        n.queue = [];
+        t = b.createElement(e);
+        t.id = 'fb-pixel-script';
+        t.async = !0;
+        t.src = v;
+        s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s);
+      })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
       
-      if (config.tiktokPixelId) {
-        ;(function (w, d, t) {
-          w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
-          const ttPixels = config.tiktokPixelId.split(',').map(p => p.trim()).filter(Boolean);
-          ttPixels.forEach(p => ttq.load(p));
-          ttq.page();
-        })(window, document, 'ttq');
+      const fbPixels = config.fbPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
+      fbPixels.forEach((p: string) => window.fbq('init', p));
+      window.fbq('track', 'PageView');
+    }
+
+    // Inject Google Analytics / Ads (guarded against duplicate script tags)
+    if ((config.googleAdsId || config.ga4MeasurementId) && !document.getElementById('google-gtag-script')) {
+      const gtagId = config.ga4MeasurementId || config.googleAdsId;
+      const script = document.createElement('script');
+      script.id = 'google-gtag-script';
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${gtagId}`;
+      document.head.appendChild(script);
+      
+      window.dataLayer = window.dataLayer || [];
+      function gtag(..._args: any[]) {
+        window.dataLayer.push(arguments);
       }
+      gtag('js', new Date());
+      if (config.googleAdsId) gtag('config', config.googleAdsId);
+      if (config.ga4MeasurementId) gtag('config', config.ga4MeasurementId);
+    }
+    
+    // Inject TikTok Pixel (guarded against duplicate initialization)
+    if (config.tiktokPixelId && !document.getElementById('tiktok-pixel-script')) {
+      (function (w: any, d: any, t: any) {
+        w.TiktokAnalyticsObject = t;
+        var ttq = w[t] = w[t] || [];
+        ttq.methods = ["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
+        ttq.setAndDefer = function(t: any, e: any) {
+          t[e] = function() {
+            t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+          };
+        };
+        for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
+        ttq.instance = function(t: any) {
+          for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]);
+          return e;
+        };
+        ttq.load = function(e: any, n: any) {
+          var i = "https://analytics.tiktok.com/i18n/pixel/events.js";
+          ttq._i = ttq._i || {};
+          ttq._i[e] = [];
+          ttq._i[e]._u = i;
+          ttq._t = ttq._t || {};
+          ttq._t[e] = +new Date;
+          ttq._o = ttq._o || {};
+          ttq._o[e] = n || {};
+          var o = document.createElement("script");
+          o.id = 'tiktok-pixel-script';
+          o.type = "text/javascript";
+          o.async = !0;
+          o.src = i + "?sdkid=" + e + "&lib=" + t;
+          var a = document.getElementsByTagName("script")[0];
+          a.parentNode.insertBefore(o, a);
+        };
+        const ttPixels = config.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
+        ttPixels.forEach((p: string) => ttq.load(p));
+        ttq.page();
+      })(window, document, 'ttq');
     }
   }, [config]);
 
-  
   useEffect(() => {
-    // track visit once per session
+    // track visit once per session in idle time without blocking performance metrics
     if (!sessionStorage.getItem('visitTracked')) {
-      setTimeout(() => {
+      const sendTrack = () => {
         fetch('/api/track-visit', { method: 'POST' }).catch(() => {});
         sessionStorage.setItem('visitTracked', 'true');
-      }, 3000); // Deferred execution
+      };
+      
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(sendTrack, { timeout: 6000 });
+      } else {
+        setTimeout(sendTrack, 5000);
+      }
     }
   }, []);
 
@@ -218,7 +270,7 @@ export default function App() {
 
     if (config?.googleAdsId && config?.googleAdsLabel && typeof window !== 'undefined') {
       window.dataLayer = window.dataLayer || [];
-      function gtag(){window.dataLayer.push(arguments);}
+      function gtag(..._args: any[]) { window.dataLayer.push(arguments); }
       
       if (formData && formData.phone) {
         let phone = String(formData.phone).trim();
@@ -242,7 +294,7 @@ export default function App() {
 
     if (config?.ga4MeasurementId && typeof window !== 'undefined') {
       window.dataLayer = window.dataLayer || [];
-      function gtag(){window.dataLayer.push(arguments);}
+      function gtag(..._args: any[]) { window.dataLayer.push(arguments); }
       gtag('event', 'purchase', {
         currency: 'DZD',
         value: price,

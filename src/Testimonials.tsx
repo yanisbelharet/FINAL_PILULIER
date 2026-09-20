@@ -7,14 +7,12 @@ const review4 = 'https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855
 const review5 = 'https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/t8CauggAXXRf8cM8tXzQdrCZzuoSgkQeSnAMGKJb.webp';
 const Testimonials = () => {
   const reviews = [
-    review1,
-    review2,
-    review3,
-    review4,
-    review5
+    { src: review1, width: 750, height: 735, aspect: '750 / 735' },
+    { src: review2, width: 750, height: 642, aspect: '750 / 642' },
+    { src: review3, width: 750, height: 686, aspect: '750 / 686' },
+    { src: review4, width: 750, height: 561, aspect: '750 / 561' },
+    { src: review5, width: 750, height: 518, aspect: '750 / 518' },
   ];
-
-  // ...
 
   return (
     <section className="py-16 bg-slate-50 px-4 border-y border-slate-100">
@@ -27,9 +25,22 @@ const Testimonials = () => {
         </div>
         
         <div className="space-y-6">
-          {reviews.map((imgSrc, i) => (
-            <div key={i} className="rounded-3xl overflow-hidden shadow-md border border-slate-100">
-              <img loading="lazy" src={imgSrc} alt={`رأي زبون ${i + 1}`} className="w-full h-auto object-cover" />
+          {reviews.map((rev, i) => (
+            <div 
+              key={i} 
+              className="rounded-3xl overflow-hidden shadow-md border border-slate-100 bg-slate-100"
+              style={{ aspectRatio: rev.aspect }}
+            >
+              <img 
+                loading="lazy" 
+                decoding="async"
+                src={rev.src} 
+                width={rev.width}
+                height={rev.height}
+                alt={`رأي زبون ${i + 1}`} 
+                className="w-full h-auto object-cover" 
+                style={{ aspectRatio: rev.aspect }}
+              />
             </div>
           ))}
         </div>

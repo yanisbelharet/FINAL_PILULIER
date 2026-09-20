@@ -2,11 +2,11 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ShoppingCart } from 'lucide-react';
+import CheckoutForm from './CheckoutForm';
 
-const CheckoutForm = lazy(() => import('./CheckoutForm'));
 const Testimonials = lazy(() => import('./Testimonials'));
 
-// Images hébergées directement sur le CDN YouCan (plus besoin de les inclure dans le bundle)
+// Images hébergées directement sur le CDN YouCan
 const img1 = 'https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/HxVCmxikiwh6FWU4vOJ9898xYRoXH5n8uTCqLIP3.webp';
 const img2 = 'https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/1FEj3c7j36EWW7kiy2pKEZM7qvWb9mSMlohcRY2L.webp';
 const img3 = 'https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/U2IocP01AopSh7BOOXvMuHvfpw6ZXuCo4NqtoSRW.webp';
@@ -35,40 +35,68 @@ export default function LandingPageV3({ config, onPurchase }: { config: any, onP
     }
   }, [product]);
 
+  // Use IntersectionObserver instead of scroll listener to prevent forced reflows and boost main thread performance
   useEffect(() => {
-    const handleScroll = () => {
-      const firstButton = document.getElementById('first-order-button');
-      const checkoutForm = document.getElementById('checkout');
-      let shouldShow = false;
+    const firstButton = document.getElementById('first-order-button');
+    const checkoutForm = document.getElementById('checkout');
 
-      if (firstButton) {
-        // Trigger earlier when the button is near the top of the viewport
-        shouldShow = firstButton.getBoundingClientRect().bottom < 50;
-      } else {
-        shouldShow = window.scrollY > 400;
-      }
-      
-      // Hide sticky button when the actual checkout form is visible on screen
-      if (checkoutForm && shouldShow) {
-        const rect = checkoutForm.getBoundingClientRect();
-        if (rect.top < window.innerHeight && rect.bottom > 0) {
-          shouldShow = false;
-        }
-      }
-      
-      setShowStickyButton(shouldShow);
+    if (!window.IntersectionObserver) {
+      const handleScroll = () => {
+        setShowStickyButton(window.scrollY > 400);
+      };
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+
+    let isButtonPassed = false;
+    let isCheckoutVisible = false;
+
+    const updateState = () => {
+      setShowStickyButton(isButtonPassed && !isCheckoutVisible);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    setTimeout(handleScroll, 100);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const buttonObserver = new IntersectionObserver(
+      ([entry]) => {
+        // When first button leaves view at the top, activate sticky
+        isButtonPassed = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+        updateState();
+      },
+      { threshold: 0 }
+    );
+
+    const checkoutObserver = new IntersectionObserver(
+      ([entry]) => {
+        isCheckoutVisible = entry.isIntersecting;
+        updateState();
+      },
+      { threshold: 0.05 }
+    );
+
+    if (firstButton) buttonObserver.observe(firstButton);
+    if (checkoutForm) checkoutObserver.observe(checkoutForm);
+
+    return () => {
+      buttonObserver.disconnect();
+      checkoutObserver.disconnect();
+    };
   }, []);
 
   return (
     <div className="min-h-screen bg-slate-100 pb-24 font-sans text-slate-800" dir="rtl">
       <div className="max-w-2xl mx-auto bg-white shadow-2xl min-h-screen overflow-hidden flex flex-col">
-        {/* 1. Image 1 */}
-        <img src={img1} alt="Product" className="w-full object-cover" loading="eager" fetchPriority="high" />
+        {/* 1. Image 1 - LCP Image with exact aspect ratio to eliminate layout shift */}
+        <div className="w-full relative bg-slate-50" style={{ aspectRatio: '750 / 876' }}>
+          <img 
+            src={img1} 
+            alt="Product" 
+            width={750} 
+            height={876} 
+            className="w-full h-auto object-cover" 
+            loading="eager" 
+            fetchPriority="high" 
+            style={{ aspectRatio: '750 / 876' }}
+          />
+        </div>
 
         {/* 2. Link Button - Scroll to Checkout */}
         <div className="flex justify-center" id="first-order-button">
@@ -85,23 +113,68 @@ export default function LandingPageV3({ config, onPurchase }: { config: any, onP
           </a>
         </div>
 
-        {/* 3. Images List */}
-        <img src={img2} alt="Product details" className="w-full object-cover" loading="lazy" decoding="async" />
-        <img src={img3} alt="Product details" className="w-full object-cover mt-2" loading="lazy" decoding="async" />
-        <img src={img4} alt="Product details" className="w-full object-cover mt-2" loading="lazy" decoding="async" />
-        <img src={img5} alt="Product details" className="w-full object-cover mt-2" loading="lazy" decoding="async" />
+        {/* 3. Images List with explicit aspect-ratios to eliminate CLS */}
+        <div className="w-full relative bg-slate-50" style={{ aspectRatio: '750 / 2056' }}>
+          <img 
+            src={img2} 
+            alt="Product details" 
+            width={750} 
+            height={2056} 
+            className="w-full h-auto object-cover" 
+            loading="lazy" 
+            decoding="async" 
+            style={{ aspectRatio: '750 / 2056' }}
+          />
+        </div>
 
-        {/* 4. Checkout Form */}
+        <div className="w-full relative bg-slate-50 mt-2" style={{ aspectRatio: '750 / 629' }}>
+          <img 
+            src={img3} 
+            alt="Product details" 
+            width={750} 
+            height={629} 
+            className="w-full h-auto object-cover" 
+            loading="lazy" 
+            decoding="async" 
+            style={{ aspectRatio: '750 / 629' }}
+          />
+        </div>
+
+        <div className="w-full relative bg-slate-50 mt-2" style={{ aspectRatio: '750 / 813' }}>
+          <img 
+            src={img4} 
+            alt="Product details" 
+            width={750} 
+            height={813} 
+            className="w-full h-auto object-cover" 
+            loading="lazy" 
+            decoding="async" 
+            style={{ aspectRatio: '750 / 813' }}
+          />
+        </div>
+
+        <div className="w-full relative bg-slate-50 mt-2" style={{ aspectRatio: '750 / 1539' }}>
+          <img 
+            src={img5} 
+            alt="Product details" 
+            width={750} 
+            height={1539} 
+            className="w-full h-auto object-cover" 
+            loading="lazy" 
+            decoding="async" 
+            style={{ aspectRatio: '750 / 1539' }}
+          />
+        </div>
+
+        {/* 4. Checkout Form - rendered directly with zero shift */}
         <section id="checkout" className="py-8 bg-white px-4 border-t border-slate-100 mt-4">
           <div className="max-w-xl mx-auto">
-            <Suspense fallback={<div className="p-8 text-center text-slate-500">جاري تحميل الاستمارة...</div>}>
-              <CheckoutForm product={product} promoActive={config.promoActive} promoText={config.promoText} onPurchase={onPurchase} />
-            </Suspense>
+            <CheckoutForm product={product} promoActive={config.promoActive} promoText={config.promoText} onPurchase={onPurchase} />
           </div>
         </section>
 
         {/* 5. Reviews */}
-        <Suspense fallback={<div className="p-8 text-center text-slate-500">جاري تحميل الآراء...</div>}>
+        <Suspense fallback={<div className="p-8 text-center text-slate-400 min-h-[200px]">جاري تحميل الآراء...</div>}>
           <Testimonials />
         </Suspense>
       </div>

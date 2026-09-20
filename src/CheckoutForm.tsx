@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, CheckCircle2, ShieldCheck, Clock, Plane, Smartphone, Check, Star, Shield, AlertCircle, Timer, User, Phone, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { WILAYAS, DELIVERY_PRICES } from './data';
@@ -6,6 +6,7 @@ import { WILAYAS, DELIVERY_PRICES } from './data';
 const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product: any, promoActive?: boolean, promoText?: string, onPurchase: (p: number, product: any, formData: any) => void }) => {
   const navigate = useNavigate();
   const { price: productPrice, oldPrice: productOldPrice } = product;
+  const isSubmittingRef = useRef(false);
   const [formData, setFormData] = useState<{
     name: string;
     phone: string;
@@ -46,6 +47,8 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current || loading) return;
+    isSubmittingRef.current = true;
     setLoading(true);
     
     const eventId = `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -66,7 +69,7 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
       });
       
       if (response.ok) {
-        onPurchase(productPrice * formData.quantity, product, { ...formData, eventId });
+        onPurchase(totalPrice, product, { ...formData, eventId });
         navigate('/thank-you', {
           state: {
             orderDetails: {
@@ -78,10 +81,12 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
           }
         });
       } else {
+        isSubmittingRef.current = false;
         alert('حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مرة أخرى.');
       }
     } catch (error) {
       console.error('Error submitting order:', error);
+      isSubmittingRef.current = false;
       alert('حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مرة أخرى.');
     } finally {
       setLoading(false);

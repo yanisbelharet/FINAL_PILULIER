@@ -472,7 +472,8 @@ const wilayaMap: Record<string, string> = {
           createdAt: serverTimestamp(),
           orderNumber: nextOrderNumber,
           displayId,
-          sheetSynced: false
+          sheetSynced: false,
+          eventId: eventId || `ORDER_${nextOrderNumber}_${Date.now()}`
         });
       } catch (err) {
         console.error("Error saving order to Firestore:", err);
@@ -500,6 +501,7 @@ const wilayaMap: Record<string, string> = {
                 event_time: Math.floor(Date.now() / 1000),
                 action_source: "website",
                 event_id: finalEventId,
+                event_source_url: reqUrl,
                 user_data: {
                   client_ip_address: clientIp,
                   client_user_agent: userAgent,
@@ -512,6 +514,8 @@ const wilayaMap: Record<string, string> = {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(fbPayload)
+            }).then(r => r.json()).then(res => {
+              console.log("[FB CAPI Response]", JSON.stringify(res));
             }).catch(e => console.error("FB CAPI Error", e));
           }
         }

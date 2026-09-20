@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 const LandingPage = lazy(() => import('./LandingPage'));
@@ -86,6 +86,8 @@ export default function App() {
     };
   });
 
+  const firedPurchasesRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     let isMounted = true;
     
@@ -157,7 +159,12 @@ export default function App() {
         })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
         
         const fbPixels = config.fbPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
-        fbPixels.forEach((p: string) => window.fbq('init', p));
+        fbPixels.forEach((p: string) => {
+          try {
+            window.fbq('set', 'autoConfig', false, p);
+          } catch (e) {}
+          window.fbq('init', p);
+        });
         window.fbq('track', 'PageView');
       }
 
@@ -250,6 +257,14 @@ export default function App() {
 
   const handlePurchase = (price: number, product: any, formData?: any) => {
     const eventId = formData?.eventId || `ORDER_${Date.now()}`;
+    
+    // Déduplication absolue côté client : empêcher qu'un même eventId soit déclenché 2 fois
+    if (firedPurchasesRef.current.has(eventId)) {
+      console.warn("[Tracking] Purchase already fired for eventId:", eventId);
+      return;
+    }
+    firedPurchasesRef.current.add(eventId);
+
     // Conversion en USD au taux réel du marché parallèle (ex: 250 DA = 1 USD, 2900 DA = 11.60$)
     const usdRate = Number(config?.usdRate) > 0 ? Number(config.usdRate) : 250;
     const usdValue = Number((price / usdRate).toFixed(2));

@@ -14,6 +14,7 @@ const defaultConfig = {
   promoActive: true,
   visits: 0,
   dailyVisits: {},
+  usdRate: 250,
   productPrice: 2000,
   productOldPrice: 3500,
   fbPixelId: "",
@@ -485,6 +486,10 @@ const wilayaMap: Record<string, string> = {
         const reqUrl = req.headers.referer || "https://" + req.headers.host;
         const finalEventId = eventId || `ORDER_${nextOrderNumber}_${Date.now()}`;
         
+        // Calcul de la valeur réelle en USD basée sur le taux parallèle (ex: 250 DA = 1 USD, 2900 DA = 11.60$)
+        const usdRate = Number(configData.usdRate) > 0 ? Number(configData.usdRate) : 250;
+        const usdValue = Number((Number(price) / usdRate).toFixed(2));
+        
         // Facebook CAPI
         if (configData.fbPixelId && configData.fbAccessToken) {
           const fbPixels = configData.fbPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
@@ -500,7 +505,7 @@ const wilayaMap: Record<string, string> = {
                   client_user_agent: userAgent,
                   ph: [phoneHash]
                 },
-                custom_data: { currency: "DZD", value: Number(price) }
+                custom_data: { currency: "USD", value: usdValue }
               }]
             };
             fetch(`https://graph.facebook.com/v17.0/${pixel}/events?access_token=${configData.fbAccessToken}`, {
@@ -526,9 +531,9 @@ const wilayaMap: Record<string, string> = {
                 page: { url: reqUrl }
               },
               properties: {
-                contents: [{ price: Number(price), quantity: 1 }],
-                value: Number(price),
-                currency: "DZD"
+                contents: [{ price: usdValue, quantity: 1 }],
+                value: usdValue,
+                currency: "USD"
               }
             };
             const tiktokUrl = `https://business-api.tiktok.com/open_api/v1.3/pixel/track/`;
@@ -579,13 +584,13 @@ const wilayaMap: Record<string, string> = {
               events: [{
                 name: "purchase",
                 params: {
-                  currency: "DZD",
-                  value: Number(price),
+                  currency: "USD",
+                  value: usdValue,
                   transaction_id: finalEventId,
                   items: [{
                     item_id: productId || 'med-alarm',
                     item_name: productName || 'منتج',
-                    price: Number(price),
+                    price: usdValue,
                     quantity: quantity || 1
                   }]
                 }

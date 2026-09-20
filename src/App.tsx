@@ -250,9 +250,12 @@ export default function App() {
 
   const handlePurchase = (price: number, product: any, formData?: any) => {
     const eventId = formData?.eventId || `ORDER_${Date.now()}`;
+    // Conversion en USD au taux réel du marché parallèle (ex: 250 DA = 1 USD, 2900 DA = 11.60$)
+    const usdRate = Number(config?.usdRate) > 0 ? Number(config.usdRate) : 250;
+    const usdValue = Number((price / usdRate).toFixed(2));
     
     if (config?.fbPixelId && window.fbq) {
-      window.fbq('track', 'Purchase', { value: price, currency: 'DZD' }, { eventID: eventId });
+      window.fbq('track', 'Purchase', { value: usdValue, currency: 'USD' }, { eventID: eventId });
     }
     if (config?.tiktokPixelId && window.ttq) {
       if (formData && formData.phone) {
@@ -272,8 +275,8 @@ export default function App() {
           content_type: 'product',
           content_name: product.name,
         }],
-        value: price,
-        currency: 'DZD'
+        value: usdValue,
+        currency: 'USD'
       }, {
         event_id: eventId
       });
@@ -297,8 +300,8 @@ export default function App() {
 
       gtag('event', 'conversion', {
           'send_to': `${config.googleAdsId}/${config.googleAdsLabel}`,
-          'value': price,
-          'currency': 'DZD',
+          'value': usdValue,
+          'currency': 'USD',
           'transaction_id': eventId
       });
     }
@@ -307,13 +310,13 @@ export default function App() {
       window.dataLayer = window.dataLayer || [];
       function gtag(..._args: any[]) { window.dataLayer.push(arguments); }
       gtag('event', 'purchase', {
-        currency: 'DZD',
-        value: price,
+        currency: 'USD',
+        value: usdValue,
         transaction_id: eventId,
         items: [{
           item_id: product.id,
           item_name: product.name,
-          price: price,
+          price: usdValue,
           quantity: 1
         }]
       });

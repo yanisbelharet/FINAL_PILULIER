@@ -1515,6 +1515,27 @@ export default function Dashboard() {
                         />
                       </div>
                       
+                      <div className="pt-4 border-t border-slate-100 bg-amber-50/60 p-4 rounded-2xl border border-amber-100">
+                        <label className="block text-sm font-bold text-slate-800 mb-1 flex items-center justify-between">
+                          <span>Taux de change parallèle (DA pour 1 USD)</span>
+                          <span className="text-xs bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-md font-black">Marché réel (Square)</span>
+                        </label>
+                        <p className="text-xs text-slate-600 mb-3">
+                          Permet d'envoyer l'évènement <strong>Purchase</strong> en <strong>USD ($)</strong> à Meta Pixel/CAPI, TikTok et Google Ads au taux réel du marché au lieu du taux bancaire officiel.
+                          <br />
+                          <span className="text-indigo-600 font-semibold mt-1 inline-block">
+                            Exemple actuel : {config.productPrice || 2900} DA ÷ {config.usdRate || 250} = {Number(((config.productPrice || 2900) / (config.usdRate || 250)).toFixed(2))}$ USD envoyés aux pixels.
+                          </span>
+                        </p>
+                        <input 
+                          type="number" 
+                          value={config.usdRate || 250}
+                          onChange={(e) => setConfig({...config, usdRate: Number(e.target.value) || 250})}
+                          className="w-full px-4 py-3 bg-white border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 transition-all font-bold text-sm text-slate-900"
+                          placeholder="250"
+                        />
+                      </div>
+
                       <div className="pt-4 border-t border-slate-100">
                         <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Tag size={18} className="text-blue-500" /> Google Ads Tracking</h4>
                       </div>

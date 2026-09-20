@@ -1,6 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { motion } from 'motion/react';
 import { ShoppingCart } from 'lucide-react';
 import CheckoutForm from './CheckoutForm';
 
@@ -180,10 +179,10 @@ export default function LandingPageV3({ config, onPurchase }: { config: any, onP
       </div>
 
       {/* Sticky Bottom CTA */}
-      <motion.div 
-        initial={{ y: 100 }}
-        animate={{ y: showStickyButton ? 0 : 100 }}
-        className="fixed bottom-6 left-0 right-0 z-50 flex justify-center items-center pointer-events-none"
+      <div 
+        className={`fixed bottom-6 left-0 right-0 z-50 flex justify-center items-center pointer-events-none transition-all duration-300 transform ${
+          showStickyButton ? 'translate-y-0 opacity-100' : 'translate-y-24 opacity-0 pointer-events-none'
+        }`}
       >
         <div className="w-full max-w-2xl mx-auto flex items-center justify-center">
           <a 
@@ -198,7 +197,7 @@ export default function LandingPageV3({ config, onPurchase }: { config: any, onP
             <span style={{ fontSize: '18px', fontWeight: 'bold' }}>أطلب الآن</span>
           </a>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

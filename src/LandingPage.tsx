@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, CheckCircle2, ShieldCheck, Clock, Plane, Smartphone, Check, Star, Shield, AlertCircle, Timer, User, Phone, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 import { WILAYAS, DELIVERY_PRICES } from './data';
-import { getCommunesByWilayaId } from 'algeria-locations';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 
 // --- Components ---
@@ -247,6 +246,20 @@ export const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { 
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [communeList, setCommuneList] = useState<{ id: number; name_ar: string }[]>([]);
+
+  useEffect(() => {
+    if (formData.wilaya) {
+      import('algeria-locations').then(({ getCommunesByWilayaId }) => {
+        const list = getCommunesByWilayaId(parseInt(formData.wilaya, 10));
+        setCommuneList(list || []);
+      }).catch(err => {
+        console.error("Failed to load communes:", err);
+      });
+    } else {
+      setCommuneList([]);
+    }
+  }, [formData.wilaya]);
 
   const wilayaPrice = formData.wilaya ? DELIVERY_PRICES[formData.wilaya] : null;
   const deliveryPrice = wilayaPrice ? wilayaPrice[formData.deliveryType] : 0;
@@ -383,7 +396,7 @@ export const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { 
               disabled={!formData.wilaya}
             >
               <option value="" disabled>إختر البلدية</option>
-              {formData.wilaya && getCommunesByWilayaId(parseInt(formData.wilaya, 10)).map(c => (
+              {communeList.map(c => (
                 <option key={c.id} value={c.name_ar}>{c.name_ar}</option>
               ))}
             </select>

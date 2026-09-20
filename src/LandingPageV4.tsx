@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { motion } from 'motion/react';
 import { ShoppingCart } from 'lucide-react';
-import { CheckoutForm, Testimonials } from './LandingPage';
+import CheckoutForm from './CheckoutForm';
+import Testimonials from './Testimonials';
 
 // Images hébergées directement sur le CDN YouCan (plus besoin de les inclure dans le bundle)
 const img1 = 'https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/HxVCmxikiwh6FWU4vOJ9898xYRoXH5n8uTCqLIP3.webp';
@@ -175,10 +175,10 @@ export default function LandingPageV4({ config, onPurchase }: { config: any, onP
       </div>
 
       {/* Sticky Bottom CTA */}
-      <motion.div 
-        initial={{ y: 100 }}
-        animate={{ y: showStickyButton ? 0 : 100 }}
-        className="fixed bottom-6 left-0 right-0 z-50 flex justify-center items-center pointer-events-none"
+      <div 
+        className={`fixed bottom-6 left-0 right-0 z-50 flex justify-center items-center pointer-events-none transition-all duration-300 transform ${
+          showStickyButton ? 'translate-y-0 opacity-100' : 'translate-y-24 opacity-0 pointer-events-none'
+        }`}
       >
         <div className="w-full max-w-2xl mx-auto flex items-center justify-center">
           <a 
@@ -193,7 +193,7 @@ export default function LandingPageV4({ config, onPurchase }: { config: any, onP
             <span style={{ fontSize: '18px', fontWeight: 'bold' }}>أطلب الآن</span>
           </a>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

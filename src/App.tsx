@@ -1,7 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { db } from './firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 const LandingPage = lazy(() => import('./LandingPage'));
 const LandingPageV2 = lazy(() => import('./LandingPageV2'));
@@ -91,40 +89,38 @@ export default function App() {
   useEffect(() => {
     let isMounted = true;
     
-    // Use fast single getDoc instead of persistent onSnapshot to prevent long-lived streaming channel latency
-    getDoc(doc(db, "config", "main"))
-      .then((docSnap) => {
-        if (!isMounted) return;
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          let mergedProducts = data.products || defaultProducts;
-          if (data.products) {
-            const existingIds = new Set(data.products.map((p: any) => p.id));
-            const missingProducts = defaultProducts.filter(p => !existingIds.has(p.id));
-            mergedProducts = [...data.products, ...missingProducts];
-          }
-
-          const newConfig = {
-            productPrice: 2900,
-            productOldPrice: 4200,
-            promoActive: true,
-            promoText: 'عرض ترويجي محدود!',
-            visits: 0,
-            fbPixelId: "",
-            tiktokPixelId: "",
-            fbAccessToken: "",
-            tiktokAccessToken: "",
-            timerEnabled: true,
-            timerHours: 24,
-            ...data,
-            products: mergedProducts
-          } as any;
-
-          setConfig(newConfig);
-          try {
-            localStorage.setItem('site_config_cache', JSON.stringify(newConfig));
-          } catch (e) {}
+    // Fast lightweight backend config fetch without loading the heavy Firebase client SDK
+    fetch('/api/config')
+      .then(res => res.json())
+      .then((data) => {
+        if (!isMounted || !data) return;
+        let mergedProducts = data.products || defaultProducts;
+        if (data.products) {
+          const existingIds = new Set(data.products.map((p: any) => p.id));
+          const missingProducts = defaultProducts.filter(p => !existingIds.has(p.id));
+          mergedProducts = [...data.products, ...missingProducts];
         }
+
+        const newConfig = {
+          productPrice: 2900,
+          productOldPrice: 4200,
+          promoActive: true,
+          promoText: 'عرض ترويجي محدود!',
+          visits: 0,
+          fbPixelId: "",
+          tiktokPixelId: "",
+          fbAccessToken: "",
+          tiktokAccessToken: "",
+          timerEnabled: true,
+          timerHours: 24,
+          ...data,
+          products: mergedProducts
+        } as any;
+
+        setConfig(newConfig);
+        try {
+          localStorage.setItem('site_config_cache', JSON.stringify(newConfig));
+        } catch (e) {}
       })
       .catch((err) => {
         console.error("Config fetch error:", err);
@@ -138,87 +134,92 @@ export default function App() {
   useEffect(() => {
     if (!config) return;
 
-    // Inject Facebook Pixel (guarded against duplicate script tags)
-    if (config.fbPixelId && !document.getElementById('fb-pixel-script')) {
-      (function(f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
-        if (f.fbq) return;
-        n = f.fbq = function() {
-          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
-        };
-        if (!f._fbq) f._fbq = n;
-        n.push = n;
-        n.loaded = !0;
-        n.version = '2.0';
-        n.queue = [];
-        t = b.createElement(e);
-        t.id = 'fb-pixel-script';
-        t.async = !0;
-        t.src = v;
-        s = b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t, s);
-      })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
-      
-      const fbPixels = config.fbPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
-      fbPixels.forEach((p: string) => window.fbq('init', p));
-      window.fbq('track', 'PageView');
-    }
-
-    // Inject Google Analytics / Ads (guarded against duplicate script tags)
-    if ((config.googleAdsId || config.ga4MeasurementId) && !document.getElementById('google-gtag-script')) {
-      const gtagId = config.ga4MeasurementId || config.googleAdsId;
-      const script = document.createElement('script');
-      script.id = 'google-gtag-script';
-      script.async = true;
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${gtagId}`;
-      document.head.appendChild(script);
-      
-      window.dataLayer = window.dataLayer || [];
-      function gtag(..._args: any[]) {
-        window.dataLayer.push(arguments);
-      }
-      gtag('js', new Date());
-      if (config.googleAdsId) gtag('config', config.googleAdsId);
-      if (config.ga4MeasurementId) gtag('config', config.ga4MeasurementId);
-    }
-    
-    // Inject TikTok Pixel (guarded against duplicate initialization)
-    if (config.tiktokPixelId && !document.getElementById('tiktok-pixel-script')) {
-      (function (w: any, d: any, t: any) {
-        w.TiktokAnalyticsObject = t;
-        var ttq = w[t] = w[t] || [];
-        ttq.methods = ["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
-        ttq.setAndDefer = function(t: any, e: any) {
-          t[e] = function() {
-            t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+    // Run pixel injection after initial paint to prevent blocking the main thread during TTI
+    const timer = setTimeout(() => {
+      // Inject Facebook Pixel (guarded against duplicate script tags)
+      if (config.fbPixelId && !document.getElementById('fb-pixel-script')) {
+        (function(f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
+          if (f.fbq) return;
+          n = f.fbq = function() {
+            n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
           };
-        };
-        for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
-        ttq.instance = function(t: any) {
-          for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]);
-          return e;
-        };
-        ttq.load = function(e: any, n: any) {
-          var i = "https://analytics.tiktok.com/i18n/pixel/events.js";
-          ttq._i = ttq._i || {};
-          ttq._i[e] = [];
-          ttq._i[e]._u = i;
-          ttq._t = ttq._t || {};
-          ttq._t[e] = +new Date;
-          ttq._o = ttq._o || {};
-          ttq._o[e] = n || {};
-          var o = document.createElement("script");
-          o.id = 'tiktok-pixel-script';
-          o.type = "text/javascript";
-          o.async = !0;
-          o.src = i + "?sdkid=" + e + "&lib=" + t;
-          var a = document.getElementsByTagName("script")[0];
-          a.parentNode.insertBefore(o, a);
-        };
-        const ttPixels = config.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
-        ttPixels.forEach((p: string) => ttq.load(p));
-        ttq.page();
-      })(window, document, 'ttq');
-    }
+          if (!f._fbq) f._fbq = n;
+          n.push = n;
+          n.loaded = !0;
+          n.version = '2.0';
+          n.queue = [];
+          t = b.createElement(e);
+          t.id = 'fb-pixel-script';
+          t.async = !0;
+          t.src = v;
+          s = b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t, s);
+        })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+        
+        const fbPixels = config.fbPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
+        fbPixels.forEach((p: string) => window.fbq('init', p));
+        window.fbq('track', 'PageView');
+      }
+
+      // Inject Google Analytics / Ads (guarded against duplicate script tags)
+      if ((config.googleAdsId || config.ga4MeasurementId) && !document.getElementById('google-gtag-script')) {
+        const gtagId = config.ga4MeasurementId || config.googleAdsId;
+        const script = document.createElement('script');
+        script.id = 'google-gtag-script';
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${gtagId}`;
+        document.head.appendChild(script);
+        
+        window.dataLayer = window.dataLayer || [];
+        function gtag(..._args: any[]) {
+          window.dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+        if (config.googleAdsId) gtag('config', config.googleAdsId);
+        if (config.ga4MeasurementId) gtag('config', config.ga4MeasurementId);
+      }
+      
+      // Inject TikTok Pixel (guarded against duplicate initialization)
+      if (config.tiktokPixelId && !document.getElementById('tiktok-pixel-script')) {
+        (function (w: any, d: any, t: any) {
+          w.TiktokAnalyticsObject = t;
+          var ttq = w[t] = w[t] || [];
+          ttq.methods = ["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
+          ttq.setAndDefer = function(t: any, e: any) {
+            t[e] = function() {
+              t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+            };
+          };
+          for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
+          ttq.instance = function(t: any) {
+            for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]);
+            return e;
+          };
+          ttq.load = function(e: any, n: any) {
+            var i = "https://analytics.tiktok.com/i18n/pixel/events.js";
+            ttq._i = ttq._i || {};
+            ttq._i[e] = [];
+            ttq._i[e]._u = i;
+            ttq._t = ttq._t || {};
+            ttq._t[e] = +new Date;
+            ttq._o = ttq._o || {};
+            ttq._o[e] = n || {};
+            var o = document.createElement("script");
+            o.id = 'tiktok-pixel-script';
+            o.type = "text/javascript";
+            o.async = !0;
+            o.src = i + "?sdkid=" + e + "&lib=" + t;
+            var a = document.getElementsByTagName("script")[0];
+            a.parentNode.insertBefore(o, a);
+          };
+          const ttPixels = config.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
+          ttPixels.forEach((p: string) => ttq.load(p));
+          ttq.page();
+        })(window, document, 'ttq');
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [config]);
 
   useEffect(() => {

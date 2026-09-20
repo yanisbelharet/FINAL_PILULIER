@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, CheckCircle2, ShieldCheck, Clock, Plane, Smartphone, Check, Star, Shield, AlertCircle, Timer, User, Phone, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { WILAYAS, DELIVERY_PRICES } from './data';
-import { getCommunesByWilayaId } from 'algeria-locations';
+
 const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product: any, promoActive?: boolean, promoText?: string, onPurchase: (p: number, product: any, formData: any) => void }) => {
   const navigate = useNavigate();
   const { price: productPrice, oldPrice: productOldPrice } = product;
@@ -24,6 +24,21 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [communeList, setCommuneList] = useState<{ id: number; name_ar: string }[]>([]);
+
+  // Dynamically load communes on demand so that algeria-locations is NOT in the critical path bundle
+  useEffect(() => {
+    if (formData.wilaya) {
+      import('algeria-locations').then(({ getCommunesByWilayaId }) => {
+        const list = getCommunesByWilayaId(parseInt(formData.wilaya, 10));
+        setCommuneList(list || []);
+      }).catch(err => {
+        console.error("Failed to load communes:", err);
+      });
+    } else {
+      setCommuneList([]);
+    }
+  }, [formData.wilaya]);
 
   const wilayaPrice = formData.wilaya ? DELIVERY_PRICES[formData.wilaya] : null;
   const deliveryPrice = wilayaPrice ? wilayaPrice[formData.deliveryType] : 0;
@@ -167,7 +182,7 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
               disabled={!formData.wilaya}
             >
               <option value="" disabled>إختر البلدية</option>
-              {formData.wilaya && getCommunesByWilayaId(parseInt(formData.wilaya, 10)).map(c => (
+              {communeList.map(c => (
                 <option key={c.id} value={c.name_ar}>{c.name_ar}</option>
               ))}
             </select>

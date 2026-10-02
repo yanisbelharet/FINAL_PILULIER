@@ -53,9 +53,15 @@ export default function ThankYou({ config }: { config: any }) {
               <span className="text-slate-500">المنتج:</span>
               <span className="font-bold text-slate-800">{state.orderDetails.productName}</span>
             </div>
+            {state.orderDetails.city && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">المدينة / المنطقة:</span>
+                <span className="font-bold text-slate-800">{state.orderDetails.city}</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-slate-200 pt-3 mt-2">
               <span className="text-slate-500">المجموع:</span>
-              <span className="font-black text-emerald-600 text-lg">{state.orderDetails.totalPrice} د.ج</span>
+              <span className="font-black text-emerald-600 text-lg">{state.orderDetails.totalPrice} {state.orderDetails.currency || 'د.ج'}</span>
             </div>
           </div>
         </div>

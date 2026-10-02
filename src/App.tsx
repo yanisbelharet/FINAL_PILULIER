@@ -5,6 +5,7 @@ const LandingPage = lazy(() => import('./LandingPage'));
 const LandingPageV2 = lazy(() => import('./LandingPageV2'));
 const LandingPageV3 = lazy(() => import('./LandingPageV3'));
 const LandingPageV4 = lazy(() => import('./LandingPageV4'));
+const LandingPageLibya = lazy(() => import('./LandingPageLibya'));
 const Dashboard = lazy(() => import('./Dashboard'));
 const Storefront = lazy(() => import('./Storefront'));
 const ThankYou = lazy(() => import('./ThankYou'));
@@ -29,6 +30,17 @@ export default function App() {
       imageUrl: "https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/UcuCAbqBuLvphQwpgudEKiSTjNT7tkDWqG2nmVoF.webp",
       isVisible: true,
       customPath: "/product-v3/med-alarm"
+    },
+    {
+      id: "med-alarm-libya",
+      name: "منبه وحافظة الدواء الذكية 4 أوقات (ليبيا)",
+      description: "تخلص من القلق ونظم أدويتك بكل سهولة! حافظة ذكية مزودة بـ 4 منبهات قوية لتذكيرك في الوقت المحدد. متاح للشحن السريع داخل ليبيا.",
+      price: 79,
+      oldPrice: 115,
+      currency: "LYD",
+      imageUrl: "https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/UcuCAbqBuLvphQwpgudEKiSTjNT7tkDWqG2nmVoF.webp",
+      isVisible: true,
+      customPath: "/libya/med-alarm"
     },
     {
       id: "med-alarm-v4",
@@ -265,23 +277,42 @@ export default function App() {
     }
     firedPurchasesRef.current.add(eventId);
 
-    // Conversion en USD au taux réel du marché parallèle (ex: 250 DA = 1 USD, 2900 DA = 11.60$)
-    const usdRate = Number(config?.usdRate) > 0 ? Number(config.usdRate) : 250;
+    const isLibya = formData?.country === 'Libya' || formData?.currency === 'LYD' || product?.currency === 'LYD' || product?.id === 'med-alarm-libya' || product?.id === 'med-alarm-ly';
+    // Conversion en USD : 
+    // Pour la Libye : ~7.2 د.ل = 1 USD (ex: 129 د.ل = ~17.92$)
+    // Pour l'Algérie : ~250 DA = 1 USD (ex: 2900 DA = 11.60$)
+    const usdRate = isLibya ? 7.2 : (Number(config?.usdRate) > 0 ? Number(config.usdRate) : 250);
     const usdValue = Number((price / usdRate).toFixed(2));
+    
+    let formattedPhone = '';
+    if (formData && formData.phone) {
+      let rawPhone = String(formData.phone).trim().replace(/\s+/g, '');
+      if (isLibya) {
+        if (rawPhone.startsWith('0')) {
+          formattedPhone = '+218' + rawPhone.substring(1);
+        } else if (!rawPhone.startsWith('+')) {
+          formattedPhone = '+218' + rawPhone;
+        } else {
+          formattedPhone = rawPhone;
+        }
+      } else {
+        if (rawPhone.startsWith('0')) {
+          formattedPhone = '+213' + rawPhone.substring(1);
+        } else if (!rawPhone.startsWith('+')) {
+          formattedPhone = '+213' + rawPhone;
+        } else {
+          formattedPhone = rawPhone;
+        }
+      }
+    }
     
     if (config?.fbPixelId && window.fbq) {
       window.fbq('track', 'Purchase', { value: usdValue, currency: 'USD' }, { eventID: eventId });
     }
     if (config?.tiktokPixelId && window.ttq) {
-      if (formData && formData.phone) {
-        let phone = String(formData.phone).trim();
-        if (phone.startsWith('0')) {
-          phone = '+213' + phone.substring(1);
-        } else if (!phone.startsWith('+')) {
-          phone = '+213' + phone;
-        }
+      if (formattedPhone) {
         window.ttq.identify({
-          phone_number: phone
+          phone_number: formattedPhone
         });
       }
       window.ttq.track('CompletePayment', {
@@ -301,15 +332,9 @@ export default function App() {
       window.dataLayer = window.dataLayer || [];
       function gtag(..._args: any[]) { window.dataLayer.push(arguments); }
       
-      if (formData && formData.phone) {
-        let phone = String(formData.phone).trim();
-        if (phone.startsWith('0')) {
-          phone = '+213' + phone.substring(1);
-        } else if (!phone.startsWith('+')) {
-          phone = '+213' + phone;
-        }
+      if (formattedPhone) {
         gtag('set', 'user_data', {
-          "phone_number": phone
+          "phone_number": formattedPhone
         });
       }
 
@@ -332,7 +357,7 @@ export default function App() {
           item_id: product.id,
           item_name: product.name,
           price: usdValue,
-          quantity: 1
+          quantity: formData?.quantity || 1
         }]
       });
     }
@@ -348,6 +373,10 @@ export default function App() {
           <Route path="/product-v2/:id" element={<LandingPageV2 config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/product-v3/:id" element={<LandingPageV3 config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/product-v4/:id" element={<LandingPageV4 config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/libya/:id" element={<LandingPageLibya config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/product-libya/:id" element={<LandingPageLibya config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/product-ly/:id" element={<LandingPageLibya config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/libya" element={<LandingPageLibya config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/thank-you" element={<ThankYou config={config} />} />
           <Route path="*" element={<Navigate to="/" />} />

@@ -438,7 +438,26 @@ const wilayaMap: Record<string, string> = {
   app.post("/api/submitOrder", async (req, res) => {
     console.log("[ORDER] submitOrder started");
     try {
-      const { name, phone, wilaya, commune, deliveryType, price, productId, productName, eventId, quantity, source } = req.body;
+      const { 
+        name, 
+        phone, 
+        secondaryPhone,
+        wilaya, 
+        commune, 
+        city,
+        address,
+        deliveryType, 
+        price, 
+        currency,
+        country,
+        bundleId,
+        bundleTitle,
+        productId, 
+        productName, 
+        eventId, 
+        quantity, 
+        source 
+      } = req.body;
       
       let nextOrderNumber = 1;
       let configData: any = {};
@@ -455,20 +474,28 @@ const wilayaMap: Record<string, string> = {
       }
       
       const displayId = String(nextOrderNumber).padStart(2, '0');
+      const isLibya = country === 'Libya' || currency === 'LYD' || productId === 'med-alarm-libya' || productId === 'med-alarm-ly';
 
       // Save order to Firestore
       try {
         await addDoc(collection(db, "orders"), {
           name,
           phone,
-          wilaya,
-          commune,
-          deliveryType,
+          secondaryPhone: secondaryPhone || '',
+          wilaya: wilaya || city || '',
+          commune: commune || address || '',
+          city: city || wilaya || '',
+          address: address || commune || '',
+          deliveryType: deliveryType || 'home',
           price,
+          currency: isLibya ? 'LYD' : 'DZD',
+          country: isLibya ? 'Libya' : 'Algeria',
+          bundleId: bundleId || '',
+          bundleTitle: bundleTitle || '',
           productId: productId || 'med-alarm',
           productName: productName || 'منبه الدواء الذكي',
           quantity: quantity || 1,
-          source: source || 'Direct / Libre',
+          source: source || (isLibya ? 'Libya COD Landing Page' : 'Direct / Libre'),
           createdAt: serverTimestamp(),
           orderNumber: nextOrderNumber,
           displayId,
@@ -483,12 +510,35 @@ const wilayaMap: Record<string, string> = {
       try {
         const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
         const userAgent = req.headers['user-agent'] || '';
-        const phoneHash = crypto.createHash('sha256').update(String(phone).trim()).digest('hex');
+
+        // Format phone for standardized international matching
+        let cleanPhone = String(phone || '').trim().replace(/\s+/g, '');
+        if (isLibya) {
+          if (cleanPhone.startsWith('0')) {
+            cleanPhone = '218' + cleanPhone.substring(1);
+          } else if (cleanPhone.startsWith('+')) {
+            cleanPhone = cleanPhone.substring(1);
+          } else if (!cleanPhone.startsWith('218')) {
+            cleanPhone = '218' + cleanPhone;
+          }
+        } else {
+          if (cleanPhone.startsWith('0')) {
+            cleanPhone = '213' + cleanPhone.substring(1);
+          } else if (cleanPhone.startsWith('+')) {
+            cleanPhone = cleanPhone.substring(1);
+          } else if (!cleanPhone.startsWith('213')) {
+            cleanPhone = '213' + cleanPhone;
+          }
+        }
+
+        const phoneHash = crypto.createHash('sha256').update(cleanPhone).digest('hex');
         const reqUrl = req.headers.referer || "https://" + req.headers.host;
         const finalEventId = eventId || `ORDER_${nextOrderNumber}_${Date.now()}`;
         
-        // Calcul de la valeur réelle en USD basée sur le taux parallèle (ex: 250 DA = 1 USD, 2900 DA = 11.60$)
-        const usdRate = Number(configData.usdRate) > 0 ? Number(configData.usdRate) : 250;
+        // Calcul de la valeur réelle en USD : 
+        // Libye : ~7.2 د.ل = 1 USD
+        // Algérie : 250 DA = 1 USD
+        const usdRate = isLibya ? 7.2 : (Number(configData.usdRate) > 0 ? Number(configData.usdRate) : 250);
         const usdValue = Number((Number(price) / usdRate).toFixed(2));
         
         // Facebook CAPI
@@ -628,8 +678,14 @@ const wilayaMap: Record<string, string> = {
         return res.json({ success: true, warning: "Telegram not configured" });
       }
 
-      const dateStr = new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Algiers' });
-      const text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n📦 *الكمية:* ${quantity || 1}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
+      const dateStr = new Date().toLocaleString('fr-FR', { timeZone: isLibya ? 'Africa/Tripoli' : 'Africa/Algiers' });
+      
+      let text = '';
+      if (isLibya) {
+        text = `🛒 *طلبية جديدة من ليبيا 🇱🇾 #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n📦 *العرض والكمية:* ${quantity || 1} قطعة (${bundleTitle || productName || 'منبه الدواء'})\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}${secondaryPhone ? `\n📱 *هاتف إضافي:* ${secondaryPhone}` : ''}\n📍 *المدينة / المنطقة:* ${city || wilaya}\n🏠 *العنوان بالتفصيل:* ${address || commune || 'غير محدد'}\n🚚 *التوصيل:* لباب المنزل (الدفع عند الاستلام)\n💰 *المبلغ المطلوب:* ${price} د.ل (دينار ليبي)`;
+      } else {
+        text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n📦 *الكمية:* ${quantity || 1}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
+      }
 
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",

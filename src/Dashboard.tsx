@@ -857,7 +857,7 @@ export default function Dashboard() {
                             <th className="p-4 font-bold text-slate-600 text-sm">Téléphone</th>
                             <th className="p-4 font-bold text-slate-600 text-sm">Wilaya / Commune</th>
                             <th className="p-4 font-bold text-slate-600 text-sm">Livraison</th>
-                            <th className="p-4 font-bold text-slate-600 text-sm">Prix (DA)</th>
+                            <th className="p-4 font-bold text-slate-600 text-sm">Prix</th>
                             <th className="p-4 font-bold text-slate-600 text-sm">Source</th>
                           </tr>
                         </thead>
@@ -865,19 +865,26 @@ export default function Dashboard() {
                           {filteredOrders.map((order, i) => (
                             <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                               
-                              <td className="p-4 font-bold text-slate-800">#{order.displayId || order.id.slice(0,4)}</td>
+                              <td className="p-4 font-bold text-slate-800">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{order.country === 'Libya' || order.currency === 'LYD' ? '🇱🇾' : '🇩🇿'}</span>
+                                  <span>#{order.displayId || order.id.slice(0,4)}</span>
+                                </div>
+                              </td>
                               <td className="p-4 text-sm text-slate-500">
                                 {order.createdAt ? new Date(order.createdAt).toLocaleString('fr-FR') : 'N/A'}
                               </td>
                               <td className="p-4 font-bold text-slate-800">{order.name}</td>
                               <td className="p-4 font-mono text-slate-600">{order.phone}</td>
-                              <td className="p-4 text-sm text-slate-600">{order.wilaya}, {order.commune}</td>
+                              <td className="p-4 text-sm text-slate-600">{order.wilaya || order.city}, {order.commune || order.address}</td>
                               <td className="p-4">
                                 <span className={`text-xs font-bold px-2 py-1 rounded-md ${order.deliveryType === 'home' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-amber-50 text-amber-700 border border-amber-100'}`}>
                                   {order.deliveryType === 'home' ? 'Domicile' : 'Stop Desk'}
                                 </span>
                               </td>
-                              <td className="p-4 font-black text-emerald-600">{order.price}</td>
+                              <td className="p-4 font-black text-emerald-600">
+                                {order.price} {order.currency || (order.country === 'Libya' ? 'د.ل' : 'DA')}
+                              </td>
                               <td className="p-4 text-xs font-bold text-slate-500">{order.source || 'Direct / Libre'}</td>
                             </tr>
                           ))}
@@ -965,8 +972,8 @@ export default function Dashboard() {
                               </td>
                               
                               <td className="p-4">
-                                <div className="text-sm font-medium text-slate-700">{order.wilaya} - {order.commune}</div>
-                                <div className="font-black text-emerald-600 mt-1 mb-2">{order.price} DA <span className="text-xs font-normal text-slate-500">({order.deliveryType === 'home' ? 'Domicile' : 'Stop Desk'})</span></div>
+                                <div className="text-sm font-medium text-slate-700">{order.wilaya || order.city} - {order.commune || order.address}</div>
+                                <div className="font-black text-emerald-600 mt-1 mb-2">{order.price} {order.currency || (order.country === 'Libya' ? 'د.ل' : 'DA')} <span className="text-xs font-normal text-slate-500">({order.deliveryType === 'home' ? 'Domicile' : 'Stop Desk'})</span></div>
                                 
                                 <div className="flex flex-col gap-1 mt-2">
                                   <input 

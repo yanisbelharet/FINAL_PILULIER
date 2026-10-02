@@ -148,39 +148,79 @@ export default function App() {
   useEffect(() => {
     if (!config) return;
 
-    // Run pixel injection after initial paint to prevent blocking the main thread during TTI
-    const timer = setTimeout(() => {
-      // Inject Facebook Pixel (guarded against duplicate script tags)
+    // Initialize tracking queues immediately so no events are lost
+    if (config.fbPixelId && !window.fbq) {
+      const n: any = function() {
+        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+      };
+      n.push = n;
+      n.loaded = !0;
+      n.version = '2.0';
+      n.queue = [];
+      window.fbq = n;
+      window._fbq = n;
+
+      const fbPixels = config.fbPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
+      fbPixels.forEach((p: string) => {
+        try { window.fbq('set', 'autoConfig', false, p); } catch (e) {}
+        window.fbq('init', p);
+      });
+      window.fbq('track', 'PageView');
+    }
+
+    if (config.tiktokPixelId && !window.ttq) {
+      const t = 'ttq';
+      window.TiktokAnalyticsObject = t;
+      const ttq = window[t] = window[t] || [];
+      ttq.methods = ["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
+      ttq.setAndDefer = function(t: any, e: any) {
+        t[e] = function() {
+          t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+        };
+      };
+      for (let i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
+      ttq.instance = function(t: any) {
+        const e = ttq._i[t] || [];
+        for (let n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]);
+        return e;
+      };
+      ttq.load = function(e: any, n: any) {
+        const i = "https://analytics.tiktok.com/i18n/pixel/events.js";
+        ttq._i = ttq._i || {};
+        ttq._i[e] = [];
+        ttq._i[e]._u = i;
+        ttq._t = ttq._t || {};
+        ttq._t[e] = +new Date;
+        ttq._o = ttq._o || {};
+        ttq._o[e] = n || {};
+      };
+      const ttPixels = config.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
+      ttPixels.forEach((p: string) => ttq.load(p));
+      ttq.page();
+    }
+
+    if ((config.googleAdsId || config.ga4MeasurementId) && !window.dataLayer) {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function() {
+        window.dataLayer.push(arguments);
+      };
+      window.gtag('js', new Date());
+      if (config.googleAdsId) window.gtag('config', config.googleAdsId);
+      if (config.ga4MeasurementId) window.gtag('config', config.ga4MeasurementId);
+    }
+
+    // Defer external heavy scripts until after initial paint so LCP & FCP are not delayed
+    const injectScripts = () => {
+      // 1. Facebook Pixel external script
       if (config.fbPixelId && !document.getElementById('fb-pixel-script')) {
-        (function(f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
-          if (f.fbq) return;
-          n = f.fbq = function() {
-            n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
-          };
-          if (!f._fbq) f._fbq = n;
-          n.push = n;
-          n.loaded = !0;
-          n.version = '2.0';
-          n.queue = [];
-          t = b.createElement(e);
-          t.id = 'fb-pixel-script';
-          t.async = !0;
-          t.src = v;
-          s = b.getElementsByTagName(e)[0];
-          s.parentNode.insertBefore(t, s);
-        })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
-        
-        const fbPixels = config.fbPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
-        fbPixels.forEach((p: string) => {
-          try {
-            window.fbq('set', 'autoConfig', false, p);
-          } catch (e) {}
-          window.fbq('init', p);
-        });
-        window.fbq('track', 'PageView');
+        const script = document.createElement('script');
+        script.id = 'fb-pixel-script';
+        script.async = true;
+        script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+        document.head.appendChild(script);
       }
 
-      // Inject Google Analytics / Ads (guarded against duplicate script tags)
+      // 2. Google Tag Manager / Ads external script
       if ((config.googleAdsId || config.ga4MeasurementId) && !document.getElementById('google-gtag-script')) {
         const gtagId = config.ga4MeasurementId || config.googleAdsId;
         const script = document.createElement('script');
@@ -188,61 +228,40 @@ export default function App() {
         script.async = true;
         script.src = `https://www.googletagmanager.com/gtag/js?id=${gtagId}`;
         document.head.appendChild(script);
-        
-        window.dataLayer = window.dataLayer || [];
-        function gtag(..._args: any[]) {
-          window.dataLayer.push(arguments);
-        }
-        gtag('js', new Date());
-        if (config.googleAdsId) gtag('config', config.googleAdsId);
-        if (config.ga4MeasurementId) gtag('config', config.ga4MeasurementId);
       }
-      
-      // Inject TikTok Pixel (guarded against duplicate initialization)
-      if (config.tiktokPixelId && !document.getElementById('tiktok-pixel-script')) {
-        (function (w: any, d: any, t: any) {
-          w.TiktokAnalyticsObject = t;
-          var ttq = w[t] = w[t] || [];
-          ttq.methods = ["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
-          ttq.setAndDefer = function(t: any, e: any) {
-            t[e] = function() {
-              t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
-            };
-          };
-          for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
-          ttq.instance = function(t: any) {
-            for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]);
-            return e;
-          };
-          ttq.load = function(e: any, n: any) {
-            var i = "https://analytics.tiktok.com/i18n/pixel/events.js";
-            ttq._i = ttq._i || {};
-            ttq._i[e] = [];
-            ttq._i[e]._u = i;
-            ttq._t = ttq._t || {};
-            ttq._t[e] = +new Date;
-            ttq._o = ttq._o || {};
-            ttq._o[e] = n || {};
-            var o = document.createElement("script");
-            o.id = 'tiktok-pixel-script';
-            o.type = "text/javascript";
-            o.async = !0;
-            o.src = i + "?sdkid=" + e + "&lib=" + t;
-            var a = document.getElementsByTagName("script")[0];
-            a.parentNode.insertBefore(o, a);
-          };
-          const ttPixels = config.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
-          ttPixels.forEach((p: string) => ttq.load(p));
-          ttq.page();
-        })(window, document, 'ttq');
-      }
-    }, 100);
 
-    return () => clearTimeout(timer);
+      // 3. TikTok Pixel external script
+      if (config.tiktokPixelId && !document.getElementById('tiktok-pixel-script')) {
+        const ttPixels = config.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
+        const primaryPixel = ttPixels[0] || '';
+        const script = document.createElement('script');
+        script.id = 'tiktok-pixel-script';
+        script.async = true;
+        script.src = `https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${primaryPixel}&lib=ttq`;
+        document.head.appendChild(script);
+      }
+    };
+
+    let timerId: any = null;
+    if ('requestIdleCallback' in window) {
+      timerId = (window as any).requestIdleCallback(injectScripts, { timeout: 1500 });
+    } else {
+      timerId = setTimeout(injectScripts, 1000);
+    }
+
+    return () => {
+      if (timerId) {
+        if ('cancelIdleCallback' in window) {
+          (window as any).cancelIdleCallback(timerId);
+        } else {
+          clearTimeout(timerId);
+        }
+      }
+    };
   }, [config]);
 
   useEffect(() => {
-    // track visit once per session in idle time without blocking performance metrics
+    // track visit once per session in idle time via sendBeacon to avoid blocking the critical path
     if (!sessionStorage.getItem('visitTracked')) {
       const sendTrack = () => {
         const now = new Date();
@@ -251,16 +270,22 @@ export default function App() {
         const day = String(now.getDate()).padStart(2, '0');
         const clientDate = `${year}-${month}-${day}`;
 
-        fetch('/api/track-visit', { 
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ clientDate })
-        }).catch(() => {});
+        if (navigator.sendBeacon) {
+          const blob = new Blob([JSON.stringify({ clientDate })], { type: 'application/json' });
+          navigator.sendBeacon('/api/track-visit', blob);
+        } else {
+          fetch('/api/track-visit', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientDate }),
+            keepalive: true
+          }).catch(() => {});
+        }
         sessionStorage.setItem('visitTracked', 'true');
       };
       
       if ('requestIdleCallback' in window) {
-        (window as any).requestIdleCallback(sendTrack, { timeout: 6000 });
+        (window as any).requestIdleCallback(sendTrack, { timeout: 8000 });
       } else {
         setTimeout(sendTrack, 5000);
       }

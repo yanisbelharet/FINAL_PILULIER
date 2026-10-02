@@ -103,8 +103,8 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
         <span>متوفر لأول مرة في ليبيا | توصيل سريع مجاني والدفع عند الاستلام</span>
       </div>
 
-      <div className="max-w-2xl mx-auto bg-white shadow-xl min-h-screen overflow-hidden flex flex-col">
-        {/* 1. Image 1 */}
+      <main className="max-w-2xl mx-auto bg-white shadow-xl min-h-screen overflow-hidden flex flex-col">
+        {/* 1. Image 1 (LCP Hero) */}
         <div className="w-full relative bg-slate-50" style={{ aspectRatio: '750 / 876' }}>
           <img
             src={img1}
@@ -114,6 +114,7 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
             className="w-full h-auto object-cover"
             loading="eager"
             fetchPriority="high"
+            decoding="sync"
             style={{ aspectRatio: '750 / 876' }}
           />
         </div>
@@ -138,8 +139,8 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
           </a>
         </div>
 
-        {/* 3. Product Details Images */}
-        <div className="w-full relative bg-slate-50" style={{ aspectRatio: '750 / 2056' }}>
+        {/* 3. Product Details Images (Lazy loaded with content-visibility for ultra-fast rendering) */}
+        <div className="w-full relative bg-slate-50" style={{ aspectRatio: '750 / 2056', contentVisibility: 'auto', containIntrinsicSize: '750px 2056px' }}>
           <img
             src={img2}
             alt="مواصفات منبه الدواء الذكي"
@@ -148,11 +149,12 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
             className="w-full h-auto object-cover"
             loading="lazy"
             decoding="async"
+            fetchPriority="low"
             style={{ aspectRatio: '750 / 2056' }}
           />
         </div>
 
-        <div className="w-full relative bg-slate-50 mt-2" style={{ aspectRatio: '750 / 629' }}>
+        <div className="w-full relative bg-slate-50 mt-2" style={{ aspectRatio: '750 / 629', contentVisibility: 'auto', containIntrinsicSize: '750px 629px' }}>
           <img
             src={img3}
             alt="ميزات منبه الدواء الذكي"
@@ -161,11 +163,12 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
             className="w-full h-auto object-cover"
             loading="lazy"
             decoding="async"
+            fetchPriority="low"
             style={{ aspectRatio: '750 / 629' }}
           />
         </div>
 
-        <div className="w-full relative bg-slate-50 mt-2" style={{ aspectRatio: '750 / 813' }}>
+        <div className="w-full relative bg-slate-50 mt-2" style={{ aspectRatio: '750 / 813', contentVisibility: 'auto', containIntrinsicSize: '750px 813px' }}>
           <img
             src={img4}
             alt="سهولة الاستخدام"
@@ -174,11 +177,12 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
             className="w-full h-auto object-cover"
             loading="lazy"
             decoding="async"
+            fetchPriority="low"
             style={{ aspectRatio: '750 / 813' }}
           />
         </div>
 
-        <div className="w-full relative bg-slate-50 mt-2" style={{ aspectRatio: '750 / 1539' }}>
+        <div className="w-full relative bg-slate-50 mt-2" style={{ aspectRatio: '750 / 1539', contentVisibility: 'auto', containIntrinsicSize: '750px 1539px' }}>
           <img
             src={img5}
             alt="تفاصيل المنتج"
@@ -187,6 +191,7 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
             className="w-full h-auto object-cover"
             loading="lazy"
             decoding="async"
+            fetchPriority="low"
             style={{ aspectRatio: '750 / 1539' }}
           />
         </div>
@@ -202,7 +207,7 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
             />
           </div>
         </section>
-      </div>
+      </main>
 
       {/* Sticky Bottom CTA */}
       <div

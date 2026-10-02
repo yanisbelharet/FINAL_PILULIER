@@ -1543,6 +1543,28 @@ export default function Dashboard() {
                         />
                       </div>
 
+                      <div className="pt-4 border-t border-slate-100 bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
+                        <label className="block text-sm font-bold text-slate-800 mb-1 flex items-center justify-between">
+                          <span>Taux de change Libye 🇱🇾 (د.ل pour 1 USD)</span>
+                          <span className="text-xs bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded-md font-black">Marché Libyen</span>
+                        </label>
+                        <p className="text-xs text-slate-600 mb-3">
+                          Taux de conversion utilisé pour envoyer la valeur des commandes libyennes en <strong>USD ($)</strong> à Meta Pixel/CAPI, TikTok et Google Ads.
+                          <br />
+                          <span className="text-emerald-700 font-semibold mt-1 inline-block">
+                            Exemple actuel : 240 د.ل ÷ {config.libyaUsdRate || 9.73} = {Number((240 / (config.libyaUsdRate || 9.73)).toFixed(2))}$ USD envoyés aux pixels.
+                          </span>
+                        </p>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          value={config.libyaUsdRate || 9.73}
+                          onChange={(e) => setConfig({...config, libyaUsdRate: Number(e.target.value) || 9.73})}
+                          className="w-full px-4 py-3 bg-white border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold text-sm text-slate-900"
+                          placeholder="9.73"
+                        />
+                      </div>
+
                       <div className="pt-4 border-t border-slate-100">
                         <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Tag size={18} className="text-blue-500" /> Google Ads Tracking</h4>
                       </div>

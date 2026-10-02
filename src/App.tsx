@@ -33,10 +33,10 @@ export default function App() {
     },
     {
       id: "med-alarm-libya",
-      name: "منبه وحافظة الدواء الذكية 4 أوقات (ليبيا)",
+      name: "منبه وحافظة الدواء الذكية 4 أوقات",
       description: "تخلص من القلق ونظم أدويتك بكل سهولة! حافظة ذكية مزودة بـ 4 منبهات قوية لتذكيرك في الوقت المحدد. متاح للشحن السريع داخل ليبيا.",
-      price: 79,
-      oldPrice: 115,
+      price: 240,
+      oldPrice: 320,
       currency: "LYD",
       imageUrl: "https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/UcuCAbqBuLvphQwpgudEKiSTjNT7tkDWqG2nmVoF.webp",
       isVisible: true,
@@ -278,10 +278,12 @@ export default function App() {
     firedPurchasesRef.current.add(eventId);
 
     const isLibya = formData?.country === 'Libya' || formData?.currency === 'LYD' || product?.currency === 'LYD' || product?.id === 'med-alarm-libya' || product?.id === 'med-alarm-ly';
-    // Conversion en USD : 
-    // Pour la Libye : ~7.2 د.ل = 1 USD (ex: 129 د.ل = ~17.92$)
-    // Pour l'Algérie : ~250 DA = 1 USD (ex: 2900 DA = 11.60$)
-    const usdRate = isLibya ? 7.2 : (Number(config?.usdRate) > 0 ? Number(config.usdRate) : 250);
+    // Conversion en USD pour les pixels (Meta, TikTok, GA4) : 
+    // Pour la Libye : 9.73 د.ل = 1 USD (ex: 240 د.ل ÷ 9.73 = 24.67$ USD)
+    // Pour l'Algérie : ~250 DA = 1 USD (ex: 2900 DA ÷ 250 = 11.60$ USD)
+    const libyaRate = Number(config?.libyaUsdRate) > 0 ? Number(config.libyaUsdRate) : 9.73;
+    const algeriaRate = Number(config?.usdRate) > 0 ? Number(config.usdRate) : 250;
+    const usdRate = isLibya ? libyaRate : algeriaRate;
     const usdValue = Number((price / usdRate).toFixed(2));
     
     let formattedPhone = '';

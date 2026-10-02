@@ -535,10 +535,12 @@ const wilayaMap: Record<string, string> = {
         const reqUrl = req.headers.referer || "https://" + req.headers.host;
         const finalEventId = eventId || `ORDER_${nextOrderNumber}_${Date.now()}`;
         
-        // Calcul de la valeur réelle en USD : 
-        // Libye : ~7.2 د.ل = 1 USD
+        // Calcul de la valeur réelle en USD pour les pixels & CAPI : 
+        // Libye : 9.73 د.ل = 1 USD (ex: 240 د.ل ÷ 9.73 = 24.67$ USD)
         // Algérie : 250 DA = 1 USD
-        const usdRate = isLibya ? 7.2 : (Number(configData.usdRate) > 0 ? Number(configData.usdRate) : 250);
+        const libyaRate = Number(configData.libyaUsdRate) > 0 ? Number(configData.libyaUsdRate) : 9.73;
+        const algeriaRate = Number(configData.usdRate) > 0 ? Number(configData.usdRate) : 250;
+        const usdRate = isLibya ? libyaRate : algeriaRate;
         const usdValue = Number((Number(price) / usdRate).toFixed(2));
         
         // Facebook CAPI

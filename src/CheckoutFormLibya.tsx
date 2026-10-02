@@ -14,7 +14,6 @@ export default function CheckoutFormLibya({ product, promoActive = true, promoTe
   const isSubmittingRef = useRef(false);
 
   const pricePerItem = 240;
-  const oldPricePerItem = 320;
 
   const [quantity, setQuantity] = useState(1);
   const [formData, setFormData] = useState({
@@ -145,10 +144,7 @@ export default function CheckoutFormLibya({ product, promoActive = true, promoTe
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xs font-bold text-slate-500 block mb-0.5">السعر:</span>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-emerald-700">{totalPrice} د.ل</span>
-              <span className="text-sm font-bold text-slate-400 line-through">{oldPricePerItem * quantity} د.ل</span>
-            </div>
+            <span className="text-2xl sm:text-3xl font-black text-emerald-700">{totalPrice} د.ل</span>
           </div>
           <div className="text-left">
             <span className="text-xs font-bold text-emerald-800 block">الدفع عند الاستلام</span>

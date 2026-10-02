@@ -132,20 +132,28 @@ export default function CheckoutFormLibya({ product, promoActive = true, promoTe
   return (
     <div className="relative bg-white rounded-3xl p-5 sm:p-7 shadow-lg border border-slate-200">
       {/* Price & Delivery Badge Banner */}
-      <div className="bg-emerald-50 rounded-2xl p-4 mb-6 border border-emerald-100 flex items-center justify-between">
-        <div>
-          <span className="text-xs font-bold text-slate-500 block mb-0.5">السعر:</span>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-emerald-700">{totalPrice} د.ل</span>
-            <span className="text-sm font-bold text-slate-400 line-through">{oldPricePerItem * quantity} د.ل</span>
-          </div>
-        </div>
-        <div className="text-left">
-          <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm">
-            <Truck size={14} />
+      <div className="bg-emerald-50 rounded-2xl p-4 mb-6 border border-emerald-100">
+        <div className="flex items-center justify-between mb-2 pb-2 border-b border-emerald-200/60">
+          <span className="inline-flex items-center gap-1 bg-amber-400 text-slate-900 text-[11px] font-black px-2.5 py-0.5 rounded-full">
+            ✨ منتج جديد وحصري في ليبيا
+          </span>
+          <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-sm">
+            <Truck size={13} />
             التوصيل مجاني
           </span>
-          <span className="text-[11px] text-emerald-700 font-bold block mt-1 text-center">الدفع عند الاستلام</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold text-slate-500 block mb-0.5">السعر:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl sm:text-3xl font-black text-emerald-700">{totalPrice} د.ل</span>
+              <span className="text-sm font-bold text-slate-400 line-through">{oldPricePerItem * quantity} د.ل</span>
+            </div>
+          </div>
+          <div className="text-left">
+            <span className="text-xs font-bold text-emerald-800 block">الدفع عند الاستلام</span>
+            <span className="text-[11px] text-slate-500">معاينة قبل الدفع</span>
+          </div>
         </div>
       </div>
 

@@ -98,8 +98,9 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
   return (
     <div className="min-h-screen bg-slate-100 pb-24 font-sans text-slate-800" dir="rtl">
       {/* Top Banner */}
-      <div className="bg-emerald-700 text-white text-xs sm:text-sm py-2 px-4 text-center font-bold">
-        <span>توصيل سريع مجاني لكافة المدن في ليبيا | الدفع عند الاستلام</span>
+      <div className="bg-emerald-700 text-white text-xs sm:text-sm py-2 px-4 text-center font-bold flex items-center justify-center gap-2">
+        <span className="bg-amber-400 text-slate-900 text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full">جديد وحصري</span>
+        <span>متوفر لأول مرة في ليبيا | توصيل سريع مجاني والدفع عند الاستلام</span>
       </div>
 
       <div className="max-w-2xl mx-auto bg-white shadow-xl min-h-screen overflow-hidden flex flex-col">
@@ -117,8 +118,13 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
           />
         </div>
 
-        {/* 2. Order CTA Button */}
-        <div className="flex justify-center my-3" id="first-order-button">
+        {/* 2. Order CTA Button & Exclusive Badge */}
+        <div className="flex flex-col items-center my-3 px-4" id="first-order-button">
+          <div className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold mb-2 shadow-sm">
+            <span>✨</span>
+            <span>منتج جديد وحصري متوفر لأول مرة في ليبيا</span>
+          </div>
+
           <a
             href="#checkout"
             className="flex items-center justify-center gap-3 w-[300px] py-2.5 px-4 rounded-full border-4 border-solid border-[#7ED321] transition-all animate-horizontal-bounce shadow-md"
@@ -214,7 +220,7 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
             }}
           >
             <ShoppingCart size={18} color="#FFFFFF" />
-            <span className="text-[18px] font-bold">أطلب الآن (240 د.ل)</span>
+            <span className="text-[18px] font-bold">أطلب الآن</span>
           </a>
         </div>
       </div>

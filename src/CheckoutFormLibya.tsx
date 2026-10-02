@@ -19,7 +19,6 @@ export default function CheckoutFormLibya({ product, promoActive = true, promoTe
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    secondaryPhone: '',
     address: '',
   });
 
@@ -73,7 +72,7 @@ export default function CheckoutFormLibya({ product, promoActive = true, promoTe
     const orderPayload = {
       name: formData.name.trim(),
       phone: formData.phone.trim(),
-      secondaryPhone: formData.secondaryPhone.trim(),
+      secondaryPhone: '',
       address: formData.address.trim(),
       city: formData.address.trim(),
       wilaya: formData.address.trim(),
@@ -214,24 +213,6 @@ export default function CheckoutFormLibya({ product, promoActive = true, promoTe
           {phoneError && (
             <p className="text-rose-600 text-xs font-bold mt-1 text-right">{phoneError}</p>
           )}
-        </div>
-
-        {/* Secondary Phone Number (Optional) */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            رقم هاتف ثانٍ <span className="text-slate-400 font-normal">(اختياري)</span>
-          </label>
-          <div className="relative">
-            <input
-              type="tel"
-              dir="ltr"
-              placeholder="رقم هاتف إضافي"
-              value={formData.secondaryPhone}
-              onChange={(e) => setFormData({ ...formData, secondaryPhone: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-300 text-slate-900 rounded-xl pr-10 pl-3 py-2.5 text-left focus:border-emerald-600 focus:bg-white outline-none transition-all text-sm font-medium"
-            />
-            <Phone className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          </div>
         </div>
 
         {/* Address as simple Text Input */}

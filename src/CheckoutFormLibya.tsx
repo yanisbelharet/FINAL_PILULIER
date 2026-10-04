@@ -13,7 +13,11 @@ export default function CheckoutFormLibya({ product, promoActive = true, promoTe
   const navigate = useNavigate();
   const isSubmittingRef = useRef(false);
 
-  const pricePerItem = 240;
+  const getTotalPrice = (qty: number) => {
+    if (qty <= 1) return 239;
+    if (qty === 2) return 379;
+    return 379 + (qty - 2) * 180;
+  };
 
   const [quantity, setQuantity] = useState(1);
   const [formData, setFormData] = useState({
@@ -25,7 +29,7 @@ export default function CheckoutFormLibya({ product, promoActive = true, promoTe
   const [loading, setLoading] = useState(false);
   const [phoneError, setPhoneError] = useState('');
 
-  const totalPrice = pricePerItem * quantity;
+  const totalPrice = getTotalPrice(quantity);
 
   const validatePhone = (val: string) => {
     const cleaned = val.replace(/\s+/g, '').replace(/-/g, '');
@@ -143,7 +147,14 @@ export default function CheckoutFormLibya({ product, promoActive = true, promoTe
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xs font-bold text-slate-500 block mb-0.5">السعر:</span>
-            <span className="text-2xl sm:text-3xl font-black text-emerald-700">{totalPrice} د.ل</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-black text-emerald-700">{totalPrice} د.ل</span>
+              {quantity === 2 && (
+                <span className="bg-amber-100 text-amber-900 text-xs font-bold px-2 py-0.5 rounded-md">
+                  عرض 2 قطع بـ 379 د.ل
+                </span>
+              )}
+            </div>
           </div>
           <div className="text-left">
             <span className="text-xs font-bold text-emerald-800 block">الدفع عند الاستلام</span>
@@ -153,24 +164,58 @@ export default function CheckoutFormLibya({ product, promoActive = true, promoTe
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Quantity Selector */}
-        <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-3">
-          <span className="text-sm font-bold text-slate-700">الكمية:</span>
-          <div className="flex items-center gap-3">
+        {/* Quantity Selector & Bundle Options */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold text-slate-700">اختر الكمية:</span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="w-8 h-8 rounded-full bg-white border border-slate-300 text-slate-700 flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer shadow-xs"
+              >
+                <span className="text-lg font-bold leading-none">-</span>
+              </button>
+              <span className="text-lg font-black text-slate-800 w-6 text-center">{quantity}</span>
+              <button
+                type="button"
+                onClick={() => setQuantity(quantity + 1)}
+                className="w-8 h-8 rounded-full bg-white border border-slate-300 text-slate-700 flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer shadow-xs"
+              >
+                <span className="text-lg font-bold leading-none">+</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Choice Buttons for 1 or 2 Pieces */}
+          <div className="grid grid-cols-2 gap-2.5 pt-1">
             <button
               type="button"
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="w-8 h-8 rounded-full bg-white border border-slate-300 text-slate-700 flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer"
+              onClick={() => setQuantity(1)}
+              className={`p-3 rounded-xl text-center border-2 transition-all cursor-pointer ${
+                quantity === 1
+                  ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold shadow-xs'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+              }`}
             >
-              <span className="text-lg font-bold leading-none">-</span>
+              <div className="text-xs font-semibold mb-0.5">1 قطعة</div>
+              <div className="text-base font-black text-emerald-700">239 د.ل</div>
             </button>
-            <span className="text-lg font-black text-slate-800 w-6 text-center">{quantity}</span>
+
             <button
               type="button"
-              onClick={() => setQuantity(quantity + 1)}
-              className="w-8 h-8 rounded-full bg-white border border-slate-300 text-slate-700 flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer"
+              onClick={() => setQuantity(2)}
+              className={`p-3 rounded-xl text-center border-2 transition-all relative cursor-pointer ${
+                quantity === 2
+                  ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold shadow-xs'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+              }`}
             >
-              <span className="text-lg font-bold leading-none">+</span>
+              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap shadow-xs">
+                عرض خاص (وفر 99 د.ل)
+              </span>
+              <div className="text-xs font-semibold mb-0.5">2 قطع</div>
+              <div className="text-base font-black text-emerald-700">379 د.ل</div>
             </button>
           </div>
         </div>

@@ -16,7 +16,7 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
   const product = {
     id: id || "med-alarm-libya",
     name: "منبه وحافظة الدواء الذكية 4 أوقات",
-    price: 240,
+    price: 239,
     oldPrice: 320,
     currency: "LYD",
     imageUrl: img1
@@ -26,7 +26,7 @@ export default function LandingPageLibya({ config, onPurchase }: { config: any, 
 
   // Track ViewContent for Libya (USD equivalent with 9.73 LYD / 1 USD)
   useEffect(() => {
-    const usdValue = Number((240 / 9.73).toFixed(2)); // ~24.67 USD
+    const usdValue = Number((239 / 9.73).toFixed(2)); // ~24.56 USD
     if (window.ttq) {
       window.ttq.track('ViewContent', {
         contents: [{

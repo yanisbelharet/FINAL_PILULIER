@@ -35,7 +35,7 @@ export default function App() {
       id: "med-alarm-libya",
       name: "منبه وحافظة الدواء الذكية 4 أوقات",
       description: "تخلص من القلق ونظم أدويتك بكل سهولة! حافظة ذكية مزودة بـ 4 منبهات قوية لتذكيرك في الوقت المحدد. متاح للشحن السريع داخل ليبيا.",
-      price: 240,
+      price: 239,
       oldPrice: 320,
       currency: "LYD",
       imageUrl: "https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/UcuCAbqBuLvphQwpgudEKiSTjNT7tkDWqG2nmVoF.webp",

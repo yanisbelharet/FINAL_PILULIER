@@ -6,12 +6,23 @@ const LandingPageV2 = lazy(() => import('./LandingPageV2'));
 const LandingPageV3 = lazy(() => import('./LandingPageV3'));
 const LandingPageV4 = lazy(() => import('./LandingPageV4'));
 const LandingPageLibya = lazy(() => import('./LandingPageLibya'));
+const LandingPageProelastic = lazy(() => import('./LandingPageProelastic'));
 const Dashboard = lazy(() => import('./Dashboard'));
 const Storefront = lazy(() => import('./Storefront'));
 const ThankYou = lazy(() => import('./ThankYou'));
 
 export default function App() {
   const defaultProducts = [
+    {
+      id: "proelastic",
+      name: "طلاء مضاد للتسربات PROELASTIC الأصلي (Profinish)",
+      description: "طلاء عزل مطاطي شفاف مضاد للتسربات من شركة Profinish الجزائرية. نبيعه في YANIS SHOP منذ 3 سنوات. يغطي 2 م² لكل 1 كلغ ويطبق على السطح الخارجي.",
+      price: 1900,
+      oldPrice: 2800,
+      imageUrl: "/images/proelastic_bucket.jpg",
+      isVisible: true,
+      customPath: "/proelastic"
+    },
     {
       id: "med-alarm",
       name: "منبه الدواء الذكي",
@@ -404,6 +415,8 @@ export default function App() {
           <Route path="/product-libya/:id" element={<LandingPageLibya config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/product-ly/:id" element={<LandingPageLibya config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/libya" element={<LandingPageLibya config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/proelastic" element={<LandingPageProelastic onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/product/proelastic" element={<LandingPageProelastic onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/thank-you" element={<ThankYou config={config} />} />
           <Route path="*" element={<Navigate to="/" />} />

@@ -102,16 +102,27 @@ async function initBlockedIpsCache() {
 initBlockedIpsCache();
 
 function getClientIp(req: any): string {
+  let ip = '';
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string' && forwarded.length > 0) {
-    return forwarded.split(',')[0].trim();
+    ip = forwarded.split(',')[0].trim();
+  } else if (typeof req.headers['x-real-ip'] === 'string' && req.headers['x-real-ip'].length > 0) {
+    ip = req.headers['x-real-ip'].trim();
+  } else if (typeof req.headers['cf-connecting-ip'] === 'string' && req.headers['cf-connecting-ip'].length > 0) {
+    ip = req.headers['cf-connecting-ip'].trim();
+  } else {
+    ip = req.ip || req.socket?.remoteAddress || '';
   }
-  return req.socket?.remoteAddress || '';
+  if (ip.startsWith('::ffff:')) {
+    ip = ip.substring(7);
+  }
+  return ip.trim();
 }
 
 const app = express();
 const PORT = 3000;
 
+app.set('trust proxy', true);
 app.use(express.json());
 app.use(cookieParser());
 

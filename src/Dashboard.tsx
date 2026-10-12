@@ -952,32 +952,50 @@ export default function Dashboard() {
                               </td>
                               <td className="p-4">
                                 <div className="font-bold text-slate-800">{order.name}</div>
-                                {order.clientIp && (
-                                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                                      IP: {order.clientIp}
-                                    </span>
-                                    {blockedIps.includes(order.clientIp) ? (
+                                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                  {order.clientIp ? (
+                                    <>
+                                      <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs">
+                                        IP: {order.clientIp}
+                                      </span>
+                                      {blockedIps.includes(order.clientIp) ? (
+                                        <button
+                                          onClick={() => handleUnblockIp(order.clientIp)}
+                                          disabled={ipActionLoading === order.clientIp}
+                                          className="text-[11px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-700 hover:bg-rose-200 border border-rose-300 transition-colors cursor-pointer"
+                                          title="Cette IP est bloquée. Cliquer pour débloquer."
+                                        >
+                                          🚫 IP Bloquée (Débloquer)
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleBlockIp(order.clientIp)}
+                                          disabled={ipActionLoading === order.clientIp}
+                                          className="text-[11px] font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white border border-rose-200 transition-all cursor-pointer shadow-2xs"
+                                          title="Bloquer cette adresse IP pour empêcher les futures commandes"
+                                        >
+                                          🚫 Bloquer IP
+                                        </button>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200">
+                                        IP: Non enregistrée (ancienne commande)
+                                      </span>
                                       <button
-                                        onClick={() => handleUnblockIp(order.clientIp)}
-                                        disabled={ipActionLoading === order.clientIp}
-                                        className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 hover:bg-rose-200 transition-colors cursor-pointer"
-                                        title="Cette IP est bloquée. Cliquer pour débloquer."
-                                      >
-                                        🚫 Bloquée (Débloquer)
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => handleBlockIp(order.clientIp)}
-                                        disabled={ipActionLoading === order.clientIp}
-                                        className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
-                                        title="Bloquer cette adresse IP pour empêcher les futures commandes"
+                                        onClick={() => {
+                                          const ip = window.prompt(`Entrez l'adresse IP à bloquer pour le client ${order.name} (${order.phone}) :`);
+                                          if (ip) handleBlockIp(ip);
+                                        }}
+                                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 border border-slate-300 transition-colors cursor-pointer"
+                                        title="Bloquer manuellement une IP pour ce client"
                                       >
                                         🚫 Bloquer IP
                                       </button>
-                                    )}
-                                  </div>
-                                )}
+                                    </>
+                                  )}
+                                </div>
                               </td>
                               <td className="p-4 font-mono text-slate-600">{order.phone}</td>
                               <td className="p-4 text-sm text-slate-600">{order.wilaya || order.city}, {order.commune || order.address}</td>
@@ -1070,32 +1088,50 @@ export default function Dashboard() {
                                 <div className="flex items-center gap-1 text-slate-500 font-mono text-sm mt-1">
                                   <Phone size={12} /> {order.phone}
                                 </div>
-                                {order.clientIp && (
-                                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                                      IP: {order.clientIp}
-                                    </span>
-                                    {blockedIps.includes(order.clientIp) ? (
+                                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                  {order.clientIp ? (
+                                    <>
+                                      <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs">
+                                        IP: {order.clientIp}
+                                      </span>
+                                      {blockedIps.includes(order.clientIp) ? (
+                                        <button
+                                          onClick={() => handleUnblockIp(order.clientIp)}
+                                          disabled={ipActionLoading === order.clientIp}
+                                          className="text-[11px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-700 hover:bg-rose-200 border border-rose-300 transition-colors cursor-pointer"
+                                          title="Cette IP est bloquée. Cliquer pour débloquer."
+                                        >
+                                          🚫 IP Bloquée (Débloquer)
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleBlockIp(order.clientIp)}
+                                          disabled={ipActionLoading === order.clientIp}
+                                          className="text-[11px] font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white border border-rose-200 transition-all cursor-pointer shadow-2xs"
+                                          title="Bloquer cette adresse IP pour empêcher les futures commandes"
+                                        >
+                                          🚫 Bloquer IP
+                                        </button>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200">
+                                        IP: Non enregistrée (ancienne commande)
+                                      </span>
                                       <button
-                                        onClick={() => handleUnblockIp(order.clientIp)}
-                                        disabled={ipActionLoading === order.clientIp}
-                                        className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 hover:bg-rose-200 transition-colors cursor-pointer"
-                                        title="Cette IP est bloquée. Cliquer pour débloquer."
-                                      >
-                                        🚫 Bloquée (Débloquer)
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => handleBlockIp(order.clientIp)}
-                                        disabled={ipActionLoading === order.clientIp}
-                                        className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
-                                        title="Bloquer cette adresse IP pour empêcher les futures commandes"
+                                        onClick={() => {
+                                          const ip = window.prompt(`Entrez l'adresse IP à bloquer pour le client ${order.name} (${order.phone}) :`);
+                                          if (ip) handleBlockIp(ip);
+                                        }}
+                                        className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 border border-slate-300 transition-colors cursor-pointer"
+                                        title="Bloquer manuellement une IP pour ce client"
                                       >
                                         🚫 Bloquer IP
                                       </button>
-                                    )}
-                                  </div>
-                                )}
+                                    </>
+                                  )}
+                                </div>
                               </td>
                               <td className="p-4">
                                 <div className="font-bold text-slate-700 text-sm">{order.productName || 'Produit par défaut'} <span className="text-rose-500 font-black">(x{order.quantity || 1})</span></div>

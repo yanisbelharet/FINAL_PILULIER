@@ -83,6 +83,32 @@ function authMiddleware(req: any, res: any, next: any) {
   }
 }
 
+// In-Memory IP Blocking Cache (0ms latency, zero slowdown)
+const blockedIpsCache: Set<string> = new Set();
+
+async function initBlockedIpsCache() {
+  try {
+    const snap = await getDoc(doc(db, "config", "security"));
+    if (snap.exists() && Array.isArray(snap.data()?.blockedIps)) {
+      snap.data().blockedIps.forEach((ip: string) => {
+        if (ip && typeof ip === 'string') blockedIpsCache.add(ip.trim());
+      });
+      console.log(`[SECURITY] Loaded ${blockedIpsCache.size} blocked IPs into memory.`);
+    }
+  } catch (err) {
+    console.error("Error loading blocked IPs into memory cache:", err);
+  }
+}
+initBlockedIpsCache();
+
+function getClientIp(req: any): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.length > 0) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.socket?.remoteAddress || '';
+}
+
 const app = express();
 const PORT = 3000;
 
@@ -93,6 +119,59 @@ app.use(cookieParser());
   app.get("/api/config", async (req, res) => {
     const config = await getConfig();
     res.json(config);
+  });
+
+  // Blocked IPs Management (0ms in-memory cache + persistent storage)
+  app.get("/api/admin/blocked-ips", authMiddleware, (req, res) => {
+    res.json({ success: true, blockedIps: Array.from(blockedIpsCache) });
+  });
+
+  app.post("/api/admin/block-ip", authMiddleware, async (req, res) => {
+    try {
+      const { ip } = req.body;
+      if (!ip || typeof ip !== 'string') {
+        return res.status(400).json({ error: "Adresse IP invalide" });
+      }
+      const cleanIp = ip.trim();
+      blockedIpsCache.add(cleanIp);
+
+      // Persist in Firestore asynchronously
+      const securityRef = doc(db, "config", "security");
+      await setDoc(securityRef, {
+        blockedIps: Array.from(blockedIpsCache),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      console.log(`[SECURITY] IP blocked: ${cleanIp}`);
+      res.json({ success: true, blockedIps: Array.from(blockedIpsCache) });
+    } catch (err) {
+      console.error("Error saving blocked IP:", err);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  app.post("/api/admin/unblock-ip", authMiddleware, async (req, res) => {
+    try {
+      const { ip } = req.body;
+      if (!ip || typeof ip !== 'string') {
+        return res.status(400).json({ error: "Adresse IP invalide" });
+      }
+      const cleanIp = ip.trim();
+      blockedIpsCache.delete(cleanIp);
+
+      // Persist in Firestore asynchronously
+      const securityRef = doc(db, "config", "security");
+      await setDoc(securityRef, {
+        blockedIps: Array.from(blockedIpsCache),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      console.log(`[SECURITY] IP unblocked: ${cleanIp}`);
+      res.json({ success: true, blockedIps: Array.from(blockedIpsCache) });
+    } catch (err) {
+      console.error("Error unblocking IP:", err);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
   });
 
   app.post("/api/auth/login", (req, res) => {
@@ -438,6 +517,17 @@ const wilayaMap: Record<string, string> = {
   app.post("/api/submitOrder", async (req, res) => {
     console.log("[ORDER] submitOrder started");
     try {
+      const clientIp = getClientIp(req);
+
+      // Instant in-memory check (O(1), ~0.0001ms) - zero database overhead, zero site slowdown
+      if (clientIp && blockedIpsCache.has(clientIp)) {
+        console.warn(`[SECURITY] Blocked order attempt from IP: ${clientIp}`);
+        return res.status(403).json({
+          success: false,
+          error: "عذراً، تعذر إتمام الطلب في الوقت الحالي. يرجى التواصل معنا عبر الهاتف."
+        });
+      }
+
       const { 
         name, 
         phone, 
@@ -499,6 +589,7 @@ const wilayaMap: Record<string, string> = {
           createdAt: serverTimestamp(),
           orderNumber: nextOrderNumber,
           displayId,
+          clientIp: clientIp || '',
           sheetSynced: false,
           eventId: eventId || `ORDER_${nextOrderNumber}_${Date.now()}`
         });
@@ -508,7 +599,6 @@ const wilayaMap: Record<string, string> = {
 
       // --- Conversions API (CAPI) ---
       try {
-        const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
         const userAgent = req.headers['user-agent'] || '';
 
         // Format phone for standardized international matching

@@ -20,7 +20,7 @@ export default function App() {
       description: "إصدار بريميوم فاخر من سبائك الألومنيوم المقاومة للصدمات. مغناطيس مزدوج N52 يلتصق على الآيفون والأسطح المعدنية (الجيم، المطبخ، السيارة). ستاند 360° ومقبض أمان.",
       price: 2900,
       oldPrice: 4500,
-      imageUrl: "/images/magsafe_hero_stand.jpg",
+      imageUrl: "/images/magsafe_hero.jpg",
       isVisible: true,
       customPath: "/magsafe-stand"
     },

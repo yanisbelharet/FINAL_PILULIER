@@ -7,12 +7,23 @@ const LandingPageV3 = lazy(() => import('./LandingPageV3'));
 const LandingPageV4 = lazy(() => import('./LandingPageV4'));
 const LandingPageLibya = lazy(() => import('./LandingPageLibya'));
 const LandingPageProelastic = lazy(() => import('./LandingPageProelastic'));
+const LandingPageMagsafe = lazy(() => import('./LandingPageMagsafe'));
 const Dashboard = lazy(() => import('./Dashboard'));
 const Storefront = lazy(() => import('./Storefront'));
 const ThankYou = lazy(() => import('./ThankYou'));
 
 export default function App() {
   const defaultProducts = [
+    {
+      id: "magsafe-ring-stand",
+      name: "حامل ومقبض MagSafe المغناطيسي المزدوج 360° للآيفون",
+      description: "إصدار بريميوم فاخر من سبائك الألومنيوم المقاومة للصدمات. مغناطيس مزدوج N52 يلتصق على الآيفون والأسطح المعدنية (الجيم، المطبخ، السيارة). ستاند 360° ومقبض أمان.",
+      price: 2900,
+      oldPrice: 4500,
+      imageUrl: "/images/magsafe_hero_stand.jpg",
+      isVisible: true,
+      customPath: "/magsafe-stand"
+    },
     {
       id: "proelastic",
       name: "طلاء مضاد للتسربات PROELASTIC الأصلي (Profinish)",
@@ -417,6 +428,9 @@ export default function App() {
           <Route path="/libya" element={<LandingPageLibya config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/proelastic" element={<LandingPageProelastic onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/product/proelastic" element={<LandingPageProelastic onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/magsafe-stand" element={<LandingPageMagsafe onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/product/magsafe-stand" element={<LandingPageMagsafe onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/magsafe" element={<LandingPageMagsafe onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/thank-you" element={<ThankYou config={config} />} />
           <Route path="*" element={<Navigate to="/" />} />

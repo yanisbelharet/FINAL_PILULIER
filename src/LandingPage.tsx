@@ -298,6 +298,8 @@ export const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { 
         body: JSON.stringify({
           ...formData,
           price: totalPrice,
+          // valeur nette (sans livraison) utilisée pour les pixels / CAPI
+          productTotal: productPrice,
           productId: product.id,
           productName: product.name,
           eventId,
@@ -306,7 +308,8 @@ export const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { 
       });
       
       if (response.ok) {
-        onPurchase(totalPrice, product, { ...formData, eventId });
+        // Pixels : valeur nette des produits, sans la livraison
+        onPurchase(productPrice, product, { ...formData, eventId });
         navigate('/thank-you', {
           state: {
             orderDetails: {

@@ -114,6 +114,8 @@ export default function CheckoutFormMagsafe({ onPurchase }: CheckoutFormMagsafeP
       deliveryType: formData.deliveryType,
       quantity: selectedBundle,
       price: totalPrice,
+      // valeur nette (sans livraison) utilisée pour les pixels / CAPI
+      productTotal: productPrice,
       currency: 'DZD',
       country: 'Algeria',
       productId: 'magsafe-ring-stand',
@@ -133,10 +135,11 @@ export default function CheckoutFormMagsafe({ onPurchase }: CheckoutFormMagsafeP
       });
 
       if (response.ok) {
-        onPurchase(totalPrice, {
+        // Pixels : valeur nette des produits, sans la livraison
+        onPurchase(productPrice, {
           id: 'magsafe-ring-stand',
           name: `حامل ومقبض MagSafe المغناطيسي المزدوج 360° للآيفون`,
-          price: totalPrice,
+          price: productPrice,
           currency: 'DZD'
         }, orderPayload);
 

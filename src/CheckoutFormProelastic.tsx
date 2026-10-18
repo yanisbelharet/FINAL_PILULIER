@@ -131,6 +131,8 @@ export default function CheckoutFormProelastic({ onPurchase }: CheckoutFormProel
       deliveryType: formData.deliveryType,
       quantity: pkg.qty,
       price: totalPrice,
+      // valeur nette (sans livraison) utilisée pour les pixels / CAPI
+      productTotal: productPrice,
       currency: 'DZD',
       country: 'Algeria',
       productId: 'proelastic-profinish',
@@ -150,10 +152,11 @@ export default function CheckoutFormProelastic({ onPurchase }: CheckoutFormProel
       });
 
       if (response.ok) {
-        onPurchase(totalPrice, {
+        // Pixels : valeur nette des produits, sans la livraison
+        onPurchase(productPrice, {
           id: 'proelastic-profinish',
           name: `PROELASTIC Profinish - ${pkg.name}`,
-          price: totalPrice,
+          price: productPrice,
           currency: 'DZD'
         }, orderPayload);
 

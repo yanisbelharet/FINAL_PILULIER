@@ -62,6 +62,8 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
         body: JSON.stringify({
           ...formData,
           price: totalPrice,
+          // valeur nette (sans livraison) utilisée pour les pixels / CAPI
+          productTotal: productPrice * formData.quantity,
           productId: product.id,
           productName: product.name,
           eventId
@@ -69,7 +71,8 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
       });
       
       if (response.ok) {
-        onPurchase(totalPrice, product, { ...formData, eventId });
+        // Pixels : valeur nette des produits, sans la livraison
+        onPurchase(productPrice * formData.quantity, product, { ...formData, eventId });
         navigate('/thank-you', {
           state: {
             orderDetails: {

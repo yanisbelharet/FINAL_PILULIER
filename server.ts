@@ -555,6 +555,7 @@ const wilayaMap: Record<string, string> = {
         bundleTitle,
         productId, 
         productName, 
+        productTotal,
         eventId, 
         quantity, 
         source 
@@ -642,7 +643,9 @@ const wilayaMap: Record<string, string> = {
         const libyaRate = Number(configData.libyaUsdRate) > 0 ? Number(configData.libyaUsdRate) : 9.73;
         const algeriaRate = Number(configData.usdRate) > 0 ? Number(configData.usdRate) : 250;
         const usdRate = isLibya ? libyaRate : algeriaRate;
-        const usdValue = Number((Number(price) / usdRate).toFixed(2));
+        // Valeur envoyée aux pixels : montant net des produits (sans livraison) quand le formulaire le fournit
+        const pixelBaseValue = Number(productTotal) > 0 ? Number(productTotal) : Number(price);
+        const usdValue = Number((pixelBaseValue / usdRate).toFixed(2));
         
         // Facebook CAPI
         if (configData.fbPixelId && configData.fbAccessToken) {

@@ -114,6 +114,8 @@ const CheckoutFormLP = ({ product, formId, sourceTag, onPurchase, onFirstInterac
           name: formData.name.trim(),
           phone,
           price: totalPrice,
+          // valeur nette (sans livraison) utilisée pour les pixels / CAPI
+          productTotal: subtotal,
           productId: product.id,
           productName: product.name,
           eventId,
@@ -122,7 +124,8 @@ const CheckoutFormLP = ({ product, formId, sourceTag, onPurchase, onFirstInterac
       });
 
       if (response.ok) {
-        onPurchase(totalPrice, product, { ...formData, phone, eventId });
+        // Pixels : valeur nette des produits, sans la livraison
+        onPurchase(subtotal, product, { ...formData, phone, eventId });
         navigate('/thank-you', {
           state: {
             orderDetails: {

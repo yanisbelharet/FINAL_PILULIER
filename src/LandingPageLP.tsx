@@ -155,7 +155,7 @@ export default function LandingPageLP({ config, onPurchase }: { config: any; onP
 
         {/* 0. Bandeau */}
         <div className="bg-slate-900 text-white text-[13px] font-bold py-2 px-3 flex items-center justify-center gap-4">
-          <span className="flex items-center gap-1.5"><Truck size={15} /> التوصيل لـ 58 ولاية</span>
+          <span className="flex items-center gap-1.5"><Truck size={15} /> التوصيل لـ 69 ولاية</span>
           <span className="w-px h-3.5 bg-white/30" />
           <span className="flex items-center gap-1.5"><Banknote size={15} /> الدفع عند الاستلام</span>
         </div>

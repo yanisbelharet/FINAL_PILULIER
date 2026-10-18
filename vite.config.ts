@@ -19,7 +19,12 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              // motion (framer-motion) contient "react" dans son chemin : on le garde à part
+              // pour qu'il ne soit chargé que par les pages qui l'utilisent.
+              if (/node_modules\/(motion|framer-motion|motion-dom|motion-utils)\//.test(id)) {
+                return 'motion';
+              }
+              if (id.includes('react') ||id.includes('react-dom') || id.includes('react-router')) {
                 return 'vendor';
               }
               if (id.includes('lucide-react')) {

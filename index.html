@@ -25,6 +25,14 @@
 
     <!-- Preload LCP Hero Image -->
     <link rel="preload" as="image" href="https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/HxVCmxikiwh6FWU4vOJ9898xYRoXH5n8uTCqLIP3.webp" fetchpriority="high" />
+    <!-- Preload du hero des landing pages /lp/ (n'affecte pas les autres pages) -->
+    <script>
+      if (location.pathname.indexOf('/lp/') === 0) {
+        var l = document.createElement('link');
+        l.rel = 'preload'; l.as = 'image'; l.href = '/lp-assets/med-alarm-hero.webp'; l.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(l);
+      }
+    </script>
   </head>
   <body class="bg-gray-50 text-gray-900 font-sans antialiased">
     <div id="root"></div>

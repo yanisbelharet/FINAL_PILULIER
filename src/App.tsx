@@ -8,6 +8,7 @@ const LandingPageV4 = lazy(() => import('./LandingPageV4'));
 const LandingPageLibya = lazy(() => import('./LandingPageLibya'));
 const LandingPageProelastic = lazy(() => import('./LandingPageProelastic'));
 const LandingPageMagsafe = lazy(() => import('./LandingPageMagsafe'));
+const LandingPageLP = lazy(() => import('./LandingPageLP'));
 const Dashboard = lazy(() => import('./Dashboard'));
 const Storefront = lazy(() => import('./Storefront'));
 const ThankYou = lazy(() => import('./ThankYou'));
@@ -431,6 +432,7 @@ export default function App() {
           <Route path="/magsafe-stand" element={<LandingPageMagsafe onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/product/magsafe-stand" element={<LandingPageMagsafe onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/magsafe" element={<LandingPageMagsafe onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/lp/med-alarm" element={<LandingPageLP config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/thank-you" element={<ThankYou config={config} />} />
           <Route path="*" element={<Navigate to="/" />} />

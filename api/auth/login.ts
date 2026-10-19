@@ -16,12 +16,16 @@ export default function handler(req, res) {
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
   
   if (password === adminPassword) {
-    const token = jwt.sign({ admin: true }, process.env.JWT_SECRET || 'supersecret', { expiresIn: '1d' });
+    // L'app mobile (/app) demande une session longue pour ne pas se reconnecter chaque jour
+    const remember = body?.remember === true;
+    const maxAge = remember ? 30 * 24 * 3600 : 86400;
+    const token = jwt.sign({ admin: true }, process.env.JWT_SECRET || 'supersecret', { expiresIn: maxAge });
     
     // Set cookie
-    res.setHeader('Set-Cookie', `admin_token=${token}; Path=/; HttpOnly; Max-Age=86400; SameSite=Strict${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+    res.setHeader('Set-Cookie', `admin_token=${token}; Path=/; HttpOnly; Max-Age=${maxAge}; SameSite=Strict${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
 
-    return res.status(200).json({ success: true });
+    // Le jeton est aussi renvoyé : l'app /app l'utilise (Authorization: Bearer), /admin le stocke déjà s'il est présent
+    return res.status(200).json({ success: true, token });
   } else {
     return res.status(401).json({ success: false, error: "Invalid password" });
   }

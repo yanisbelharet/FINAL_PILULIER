@@ -3,6 +3,7 @@ import {
   ShoppingBag, Eye, TrendingUp, Banknote, Bell, BellOff, LogOut, RefreshCw, MapPin, Megaphone,
   Package, Download, Lock, CheckCircle2, AlertTriangle, ShoppingCart,
 } from 'lucide-react';
+import { DELIVERY_PRICES } from './data';
 
 // ---------------------------------------------------------------------------
 // App mobile installable (/app) : KPI du site + notifications de commandes.
@@ -15,7 +16,7 @@ const ALGIERS_OFFSET_MS = 3600 * 1000; // UTC+1
 
 type Order = {
   id: string; orderNumber: number | null; displayId: string; name: string; phone: string; wilaya: string; commune: string;
-  price: number; currency: string; quantity: number; productId: string; productName: string; source: string;
+  price: number; currency: string; quantity: number; deliveryType: string; productTotal: number | null; productId: string; productName: string; source: string;
   status: string; createdAt: string | null;
 };
 type Stats = { serverTime: string; orders: Order[]; dailyVisits: Record<string, number>; totalVisits: number; pushConfigured: boolean };
@@ -76,6 +77,31 @@ const saveTokenForServiceWorker = async (token: string | null) => {
     if (token) await cache.put('/__token', new Response(token));
     else await cache.delete('/__token');
   } catch (e) { /* stockage indisponible */ }
+};
+
+// Montant hors livraison : valeur enregistrée si présente, sinon total – frais de livraison de la wilaya
+const netOf = (o: Order) => {
+  if (o.productTotal && o.productTotal > 0) return o.productTotal;
+  const fees = DELIVERY_PRICES[o.wilaya];
+  const fee = fees ? fees[o.deliveryType === 'desk' ? 'desk' : 'home'] : 0;
+  return Math.max(0, o.price - fee);
+};
+
+// Son « caisse enregistreuse » (fichier original, généré pour l'app)
+const ORDER_SOUND = '/app-sounds/new-order.mp3';
+let orderAudio: HTMLAudioElement | null = null;
+const getOrderAudio = () => {
+  if (!orderAudio && typeof Audio !== 'undefined') { orderAudio = new Audio(ORDER_SOUND); orderAudio.preload = 'auto'; }
+  return orderAudio;
+};
+// Chrome bloque le son tant que l'utilisateur n'a pas touché l'écran : on « débloque » au premier contact
+const unlockOrderSound = () => {
+  const a = getOrderAudio(); if (!a) return;
+  a.muted = true; a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; });
+};
+const playOrderSound = () => {
+  const a = getOrderAudio();
+  if (a) { a.currentTime = 0; a.play().catch(() => beep()); } else beep();
 };
 
 const beep = () => {
@@ -276,9 +302,16 @@ const NotificationsCard = ({ authFetch, pushConfigured }: { authFetch: (url: str
               <Download size={16} /> Installer l'app sur l'écran d'accueil
             </button>
           )}
+          <div className="flex items-center gap-2">
+            <button onClick={playOrderSound} className="h-9 px-3 rounded-lg bg-slate-100 text-slate-700 font-bold text-[13px]">🔊 Écouter le son</button>
+            <a href={ORDER_SOUND} download="yanis-nouvelle-commande.mp3" className="h-9 px-3 rounded-lg bg-slate-100 text-slate-700 font-bold text-[13px] flex items-center gap-1">
+              <Download size={14} /> Télécharger
+            </a>
+          </div>
           {msg && <p className="text-[13px] font-semibold text-slate-700">{msg}</p>}
           <p className="text-[12px] text-slate-400">
             Android : pour recevoir les alertes écran éteint, mettez Chrome sur « Non optimisé » dans Réglages › Batterie.
+            Pour avoir ce son aussi app fermée : téléchargez-le, puis Réglages › Applis › Chrome › Notifications › votre site › Son.
           </p>
         </div>
       )}
@@ -296,7 +329,12 @@ export default function AdminApp() {
   const [toast, setToast] = useState<Order | null>(null);
   const lastTopRef = useRef<number | null>(null);
 
-  useEffect(() => { document.title = 'YANIS SHOP – Commandes'; }, []);
+  useEffect(() => {
+    document.title = 'YANIS SHOP – Commandes';
+    const unlock = () => { unlockOrderSound(); window.removeEventListener('pointerdown', unlock); };
+    window.addEventListener('pointerdown', unlock);
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, []);
 
   const logout = useCallback(() => {
     try { localStorage.removeItem(TOKEN_KEY); } catch {}
@@ -324,7 +362,7 @@ export default function AdminApp() {
       const data: Stats = await res.json();
       const top = data.orders[0]?.orderNumber ?? null;
       if (lastTopRef.current !== null && top !== null && top > lastTopRef.current) {
-        setToast(data.orders[0]); beep();
+        setToast(data.orders[0]); playOrderSound();
         setTimeout(() => setToast(null), 6000);
       }
       lastTopRef.current = top;
@@ -365,8 +403,8 @@ export default function AdminApp() {
     const visits = current.reduce((s, k) => s + (Number(stats.dailyVisits[k]) || 0), 0);
     const prevVisits = previous.reduce((s, k) => s + (Number(stats.dailyVisits[k]) || 0), 0);
     const dzd = orders.filter(o => o.currency !== 'LYD');
-    const revenue = dzd.reduce((s, o) => s + o.price, 0);
-    const prevRevenue = prevOrders.filter(o => o.currency !== 'LYD').reduce((s, o) => s + o.price, 0);
+    const revenue = dzd.reduce((s, o) => s + netOf(o), 0);
+    const prevRevenue = prevOrders.filter(o => o.currency !== 'LYD').reduce((s, o) => s + netOf(o), 0);
     const pct = (a: number, b: number) => (b > 0 ? ((a - b) / b) * 100 : null);
     const conv = visits > 0 ? (orders.length / visits) * 100 : 0;
     const prevConv = prevVisits > 0 ? (prevOrders.length / prevVisits) * 100 : 0;
@@ -442,10 +480,10 @@ export default function AdminApp() {
               <Kpi icon={ShoppingCart} label="Commandes" value={fmt(view.orders.length)} delta={view.deltaOrders} sub={compareLabel} />
               <Kpi icon={Eye} label="Visites" value={fmt(view.visits)} delta={view.deltaVisits} sub={compareLabel} />
               <Kpi icon={TrendingUp} label="Taux de conversion" value={`${view.conv.toFixed(1)}%`} delta={view.deltaConv} sub="cmd / visites" />
-              <Kpi icon={Banknote} label="Chiffre d'affaires" value={`${fmt(view.revenue)} DA`} delta={view.deltaRevenue} sub="livraison incluse" />
+              <Kpi icon={Banknote} label="Chiffre d'affaires" value={`${fmt(view.revenue)} DA`} delta={view.deltaRevenue} sub="hors livraison" />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Kpi icon={Package} label="Panier moyen" value={`${fmt(view.avg)} DA`} />
+              <Kpi icon={Package} label="Panier moyen" value={`${fmt(view.avg)} DA`} sub="hors livraison" />
               <div className="bg-white rounded-2xl p-3.5 border border-slate-200">
                 <p className="text-slate-500 text-[12px] font-bold mb-2">Statuts ({periodLabel})</p>
                 <div className="flex flex-wrap gap-1">

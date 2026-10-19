@@ -603,6 +603,8 @@ const wilayaMap: Record<string, string> = {
           productId: productId || 'med-alarm',
           productName: productName || 'منبه الدواء الذكي',
           quantity: quantity || 1,
+          // montant des produits sans la livraison (si le formulaire l'envoie)
+          ...(Number(productTotal) > 0 ? { productTotal: Number(productTotal) } : {}),
           source: source || (isLibya ? 'Libya COD Landing Page' : 'Direct / Libre'),
           createdAt: serverTimestamp(),
           orderNumber: nextOrderNumber,
@@ -915,6 +917,8 @@ const wilayaMap: Record<string, string> = {
     price: Number(d.price) || 0,
     currency: d.currency || 'DZD',
     quantity: Number(d.quantity) || 1,
+    deliveryType: d.deliveryType || 'home',
+    productTotal: Number(d.productTotal) > 0 ? Number(d.productTotal) : null,
     productId: d.productId || '',
     productName: d.productName || '',
     source: d.source || 'Direct / Libre',

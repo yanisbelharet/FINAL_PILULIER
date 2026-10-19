@@ -25,6 +25,14 @@
 
     <!-- Preload LCP Hero Image -->
     <link rel="preload" as="image" href="https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/HxVCmxikiwh6FWU4vOJ9898xYRoXH5n8uTCqLIP3.webp" fetchpriority="high" />
+    <!-- App mobile /app : manifeste d'installation (n'affecte pas les autres pages) -->
+    <script>
+      if (/^\/app(\/|$)/.test(location.pathname)) {
+        var m = document.createElement('link'); m.rel = 'manifest'; m.href = '/app.webmanifest'; document.head.appendChild(m);
+        var t = document.createElement('meta'); t.name = 'theme-color'; t.content = '#047857'; document.head.appendChild(t);
+        var a = document.createElement('link'); a.rel = 'apple-touch-icon'; a.href = '/app-icons/icon-192.png'; document.head.appendChild(a);
+      }
+    </script>
     <!-- Preload du hero des landing pages /lp/ (n'affecte pas les autres pages) -->
     <script>
       if (location.pathname.indexOf('/lp/') === 0) {

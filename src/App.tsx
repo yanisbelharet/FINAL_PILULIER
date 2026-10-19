@@ -9,6 +9,10 @@ const LandingPageLibya = lazy(() => import('./LandingPageLibya'));
 const LandingPageProelastic = lazy(() => import('./LandingPageProelastic'));
 const LandingPageMagsafe = lazy(() => import('./LandingPageMagsafe'));
 const LandingPageLP = lazy(() => import('./LandingPageLP'));
+const AdminApp = lazy(() => import('./AdminApp'));
+
+// Pages internes (dashboard /admin et app mobile /app) : pas de pixels ni de comptage de visites
+const isInternalPage = () => /^\/(admin|app)(\/|$)/.test(window.location.pathname);
 const Dashboard = lazy(() => import('./Dashboard'));
 const Storefront = lazy(() => import('./Storefront'));
 const ThankYou = lazy(() => import('./ThankYou'));
@@ -169,7 +173,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!config) return;
+    if (!config || isInternalPage()) return;
 
     // Initialize tracking queues immediately so no events are lost
     if (config.fbPixelId && !window.fbq) {
@@ -285,7 +289,7 @@ export default function App() {
 
   useEffect(() => {
     // track visit once per session in idle time via sendBeacon to avoid blocking the critical path
-    if (!sessionStorage.getItem('visitTracked')) {
+    if (!isInternalPage() && !sessionStorage.getItem('visitTracked')) {
       const sendTrack = () => {
         const now = new Date();
         const year = now.getFullYear();
@@ -434,6 +438,7 @@ export default function App() {
           <Route path="/magsafe" element={<LandingPageMagsafe onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/med-alarm" element={<LandingPageLP config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/admin" element={<Dashboard />} />
+          <Route path="/app" element={<AdminApp />} />
           <Route path="/thank-you" element={<ThankYou config={config} />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

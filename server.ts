@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser";
 import crypto from "crypto";
 
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, increment } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, increment, where, Timestamp } from "firebase/firestore";
 
 console.log("[SERVER] server.ts loaded");
 
@@ -190,8 +190,14 @@ app.use(cookieParser());
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
     
     if (password === adminPassword) {
-      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET || 'supersecret', { expiresIn: '1d' });
-      res.cookie('admin_token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+      // L'app mobile (/app) demande une session longue pour ne pas se reconnecter chaque jour
+      const remember = req.body?.remember === true;
+      const token = jwt.sign({ admin: true }, process.env.JWT_SECRET || 'supersecret', { expiresIn: remember ? '30d' : '1d' });
+      res.cookie('admin_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        ...(remember ? { maxAge: 30 * 24 * 3600 * 1000 } : {})
+      });
       res.json({ success: true, token });
     } else {
       res.status(401).json({ success: false, error: "Invalid password" });
@@ -609,6 +615,9 @@ const wilayaMap: Record<string, string> = {
         console.error("Error saving order to Firestore:", err);
       }
 
+      // Notification push vers l'app mobile /app (ne bloque jamais la commande)
+      await notifyNewOrder().catch(err => console.error("[PUSH] error:", err));
+
       // --- Conversions API (CAPI) ---
       try {
         const userAgent = req.headers['user-agent'] || '';
@@ -815,6 +824,170 @@ const wilayaMap: Record<string, string> = {
     } catch (error) {
       console.error("Order processing error:", error);
       res.status(500).json({ success: false, error: "Internal server error" });
+    }
+  });
+
+
+  // =====================================================================
+  // App mobile /app : statistiques + notifications push (Web Push, VAPID)
+  // =====================================================================
+  const ALGIERS_OFFSET_MS = 3600 * 1000; // Africa/Algiers = UTC+1, sans heure d'été
+
+  const b64url = (buf: Buffer) => buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const fromB64url = (str: string) => Buffer.from(str.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+
+  function getVapid() {
+    const publicKey = process.env.VAPID_PUBLIC_KEY || '';
+    const privateKey = process.env.VAPID_PRIVATE_KEY || '';
+    if (!publicKey || !privateKey) return null;
+    const pub = fromB64url(publicKey); // point non compressé : 0x04 || X || Y
+    const key = crypto.createPrivateKey({
+      key: { kty: 'EC', crv: 'P-256', d: privateKey, x: b64url(pub.subarray(1, 33)), y: b64url(pub.subarray(33, 65)) },
+      format: 'jwk'
+    });
+    return { publicKey, key, subject: process.env.VAPID_SUBJECT || 'mailto:admin@example.com' };
+  }
+
+  function vapidJwt(audience: string, vapid: NonNullable<ReturnType<typeof getVapid>>) {
+    const header = b64url(Buffer.from(JSON.stringify({ typ: 'JWT', alg: 'ES256' })));
+    const claims = b64url(Buffer.from(JSON.stringify({ aud: audience, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: vapid.subject })));
+    const signature = crypto.sign('sha256', Buffer.from(`${header}.${claims}`), { key: vapid.key, dsaEncoding: 'ieee-p1363' });
+    return `${header}.${claims}.${b64url(signature)}`;
+  }
+
+  // Push sans contenu : le service worker récupère ensuite le détail des commandes via l'API
+  async function sendPushToAll() {
+    const vapid = getVapid();
+    if (!vapid) { console.warn("[PUSH] VAPID keys not configured"); return { sent: 0, failed: 0 }; }
+    const ref = doc(db, "config", "push");
+    const snap = await getDoc(ref);
+    const subs: any[] = (snap.exists() && Array.isArray(snap.data()?.subs)) ? snap.data().subs : [];
+    if (subs.length === 0) return { sent: 0, failed: 0 };
+
+    const expired: string[] = [];
+    let sent = 0;
+    await Promise.all(subs.map(async (sub) => {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 4000);
+        const r = await fetch(sub.endpoint, {
+          method: 'POST',
+          headers: {
+            TTL: '86400',
+            Urgency: 'high',
+            Authorization: `vapid t=${vapidJwt(new URL(sub.endpoint).origin, vapid)}, k=${vapid.publicKey}`,
+            'Content-Length': '0'
+          },
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+        if (r.status === 404 || r.status === 410) expired.push(sub.endpoint);
+        else if (r.ok) sent++;
+        else console.error("[PUSH] status", r.status, await r.text().catch(() => ''));
+      } catch (e) {
+        console.error("[PUSH] send failed:", e);
+      }
+    }));
+    if (expired.length) {
+      await setDoc(ref, { subs: subs.filter(s => !expired.includes(s.endpoint)) }, { merge: true });
+    }
+    return { sent, failed: subs.length - sent };
+  }
+
+  async function notifyNewOrder() {
+    await sendPushToAll();
+  }
+
+  const toIso = (createdAt: any) => {
+    if (createdAt && typeof createdAt.toDate === 'function') return createdAt.toDate().toISOString();
+    if (createdAt && createdAt.seconds) return new Date(createdAt.seconds * 1000).toISOString();
+    return null;
+  };
+
+  const mapOrderForApp = (id: string, d: any) => ({
+    id,
+    orderNumber: d.orderNumber || null,
+    displayId: d.displayId || '',
+    name: d.name || '',
+    phone: d.phone || '',
+    wilaya: d.wilaya || '',
+    commune: d.commune || '',
+    price: Number(d.price) || 0,
+    currency: d.currency || 'DZD',
+    quantity: Number(d.quantity) || 1,
+    productId: d.productId || '',
+    productName: d.productName || '',
+    source: d.source || 'Direct / Libre',
+    status: d.status || 'pending',
+    createdAt: toIso(d.createdAt)
+  });
+
+  // Commandes des 62 derniers jours (le client calcule les KPI par période) + visites par jour
+  app.get("/api/app/stats", authMiddleware, async (req, res) => {
+    try {
+      const nowAlg = new Date(Date.now() + ALGIERS_OFFSET_MS);
+      const todayStartUtc = Date.UTC(nowAlg.getUTCFullYear(), nowAlg.getUTCMonth(), nowAlg.getUTCDate()) - ALGIERS_OFFSET_MS;
+      const since = new Date(todayStartUtc - 61 * 24 * 3600 * 1000);
+      const q = query(collection(db, "orders"), where("createdAt", ">=", Timestamp.fromDate(since)), orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
+      const orders = snapshot.docs.map(d => mapOrderForApp(d.id, d.data()));
+      const config: any = await getConfig();
+      res.json({
+        serverTime: new Date().toISOString(),
+        orders,
+        dailyVisits: config.dailyVisits || {},
+        totalVisits: config.visits || 0,
+        pushConfigured: !!getVapid()
+      });
+    } catch (error) {
+      console.error("Error building app stats:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Utilisé par le service worker pour construire le texte des notifications
+  app.get("/api/app/recent-orders", authMiddleware, async (req, res) => {
+    try {
+      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(5));
+      const snapshot = await getDocs(q);
+      res.json(snapshot.docs.map(d => mapOrderForApp(d.id, d.data())));
+    } catch (error) {
+      console.error("Error fetching recent orders:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/app/push-key", (req, res) => {
+    const vapid = getVapid();
+    res.json({ publicKey: vapid ? vapid.publicKey : null });
+  });
+
+  app.post("/api/app/push-subscribe", authMiddleware, async (req, res) => {
+    try {
+      const sub = req.body?.subscription;
+      if (!sub || typeof sub.endpoint !== 'string' || !/^https:\/\//.test(sub.endpoint)) {
+        return res.status(400).json({ error: "Invalid subscription" });
+      }
+      const ref = doc(db, "config", "push");
+      const snap = await getDoc(ref);
+      const subs: any[] = (snap.exists() && Array.isArray(snap.data()?.subs)) ? snap.data().subs : [];
+      const next = subs.filter(s => s.endpoint !== sub.endpoint);
+      next.push({ endpoint: sub.endpoint, keys: sub.keys || {}, createdAt: new Date().toISOString(), userAgent: String(req.headers['user-agent'] || '').slice(0, 200) });
+      await setDoc(ref, { subs: next.slice(-20) }, { merge: true });
+      res.json({ success: true, devices: Math.min(next.length, 20) });
+    } catch (error) {
+      console.error("Error saving push subscription:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/app/push-test", authMiddleware, async (req, res) => {
+    try {
+      const result = await sendPushToAll();
+      res.json({ success: true, ...result });
+    } catch (error) {
+      console.error("Error sending test push:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 

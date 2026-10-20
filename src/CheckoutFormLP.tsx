@@ -14,7 +14,7 @@ export const normalizePhone = (raw: string) => {
 
 export const isValidAlgerianMobile = (p: string) => /^0[567]\d{8}$/.test(p);
 
-const getOrderSource = () => {
+export const getOrderSource = () => {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has('ttclid')) return 'TikTok Ads';
   if (urlParams.has('fbclid')) return 'Facebook Ads';

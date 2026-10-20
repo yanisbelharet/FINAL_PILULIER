@@ -13,9 +13,14 @@ const SOURCE_TAG = 'LP proelastic (B)';
 const TIKTOK_URL = 'https://www.tiktok.com/@yanishop_dz';
 const A = '/lp-assets/proelastic/';
 
-// Photos réelles du produit (PROELASTIC transparent). À compléter dès que les photos sont disponibles :
-// { src: A + 'produit-1kg.webp', alt: '...', w: 800, h: 800 }
-const PRODUCT_PHOTOS: { src: string; alt: string; w: number; h: number }[] = [];
+// Photos et vidéos réelles fournies par YANIS SHOP (emballage officiel PROELASTIC)
+const PHOTO_HERO = { src: A + 'pot-1kg.webp', alt: 'علبة PROELASTIC الأصلية 1 كلغ من Profinish', w: 342, h: 361 };
+const PHOTO_SIZES = { src: A + 'pots-1kg-5kg.webp', alt: 'علبة PROELASTIC 1 كلغ وسطل 5 كلغ', w: 478, h: 641 };
+const PHOTO_STOCK = { src: A + 'pots-stock.webp', alt: 'علب PROELASTIC الأصلية متوفرة عند YANIS SHOP', w: 539, h: 569 };
+const DEMO_VIDEOS = [
+  { src: A + 'demo-carton-1', poster: A + 'demo-carton-1.webp', title: 'الماء يبقى فوق الكرتون ولا يخترقه' },
+  { src: A + 'demo-carton-2', poster: A + 'demo-carton-2.webp', title: 'تجربة ثانية في المحل' },
+];
 
 // Vrais commentaires TikTok (@yanishop_dz), retranscrits depuis les captures fournies
 const REVIEWS = [
@@ -83,6 +88,27 @@ const STYLES = `
 
 // ------------------------------- Illustrations -------------------------------
 // Rendu illustratif (pas une photo) : à gauche une dalle protégée où l'eau perle, à droite une fissure qui laisse passer l'eau
+// Pot réel sous une pluie animée
+const HeroProduct = () => {
+  const drops = useMemo(() => Array.from({ length: 18 }, (_, i) => ({
+    left: `${(i * 41) % 100}%`, delay: `${(i * 0.31) % 2.4}s`, dur: `${1.1 + ((i * 13) % 7) / 10}s`,
+  })), []);
+  return (
+    <div className="relative mt-5 rounded-3xl overflow-hidden" style={{ aspectRatio: '1 / 0.9' }}>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(34,211,238,.35),transparent_62%)]" aria-hidden="true" />
+      <div className="absolute inset-0" aria-hidden="true">
+        {drops.map((d, i) => <span key={i} className="pe-drop" style={{ left: d.left, animationDelay: d.delay, animationDuration: d.dur }} />)}
+      </div>
+      <img src={PHOTO_HERO.src} alt={PHOTO_HERO.alt} width={PHOTO_HERO.w} height={PHOTO_HERO.h} fetchPriority="high" decoding="async"
+        className="pe-float absolute left-1/2 top-[6%] -translate-x-1/2 w-[72%] h-auto drop-shadow-[0_25px_35px_rgba(0,0,0,.55)]" />
+      <span className="absolute bottom-3 right-3 bg-emerald-500 text-white text-[12px] font-black rounded-full px-3 py-1 flex items-center gap-1 shadow-lg">
+        <BadgeCheck size={14} /> العلبة الأصلية
+      </span>
+      <span className="absolute bottom-3 left-3 bg-white text-[#0A1F44] text-[12px] font-black rounded-full px-3 py-1 shadow-lg">النسخة الشفافة</span>
+    </div>
+  );
+};
+
 const HeroIllustration = () => {
   const drops = useMemo(() => Array.from({ length: 22 }, (_, i) => ({
     left: `${(i * 37) % 100}%`, delay: `${(i * 0.29) % 2.4}s`, dur: `${1.1 + ((i * 13) % 7) / 10}s`,
@@ -144,6 +170,31 @@ const ElasticIllustration = () => (
     {[0, 1, 2, 3].map(i => <circle key={i} className="pe-bead" cx={110 + i * 26} cy="40" r="6" fill="#bae6fd" style={{ animationDelay: `${i * 0.4}s` }} />)}
   </svg>
 );
+
+// Vidéo réelle : se lance (sans son) quand elle est visible, se met en pause sinon. Rien n'est chargé avant.
+const DemoVideo = ({ src, poster, title, autoPlay }: { src: string; poster: string; title: string; autoPlay: boolean }) => {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v || !autoPlay || !('IntersectionObserver' in window)) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { v.preload = 'auto'; v.play().catch(() => {}); } else v.pause();
+    }, { threshold: 0.4 });
+    obs.observe(v);
+    return () => obs.disconnect();
+  }, [autoPlay]);
+  return (
+    <figure className="rounded-3xl overflow-hidden bg-black ring-1 ring-white/10">
+      <video ref={ref} poster={poster} muted playsInline loop preload="none" controls={!autoPlay}
+        width={360} height={640} className="w-full h-auto block" style={{ aspectRatio: '9 / 16' }} aria-label={title}>
+        {/* WebM (VP9) pour Chrome/Android, MP4 (H.264) pour iPhone */}
+        <source src={`${src}.webm`} type="video/webm" />
+        <source src={`${src}.mp4`} type="video/mp4" />
+      </video>
+      <figcaption className="px-3 py-2 text-[12px] font-bold text-sky-100/90 bg-[#0A1F44]">🎥 {title}</figcaption>
+    </figure>
+  );
+};
 
 // ------------------------------- Éléments -------------------------------
 const Section = ({ id, className = '', children }: { id?: string; className?: string; children: React.ReactNode }) => (
@@ -249,11 +300,7 @@ export default function LandingPageProelasticLP({ config, onPurchase }: { config
               <b className="text-white">PROELASTIC</b> الشفاف الأصلي من <b className="text-white">Profinish</b>: طلاء مطاطي يُدهن من الخارج، يملأ الشقوق الصغيرة ويحافظ على شكل البلاط.
             </p>
 
-            <div className="mt-5 pe-float">
-              {PRODUCT_PHOTOS[0]
-                ? <img src={PRODUCT_PHOTOS[0].src} alt={PRODUCT_PHOTOS[0].alt} width={PRODUCT_PHOTOS[0].w} height={PRODUCT_PHOTOS[0].h} fetchPriority="high" className="w-full h-auto rounded-3xl" />
-                : <HeroIllustration />}
-            </div>
+            <HeroProduct />
 
             <div className="mt-5 grid grid-cols-3 gap-2 text-center">
               {[{ v: 'شفاف', l: 'لا يغيّر شكل البلاط' }, { v: `${KG_COVERAGE_M2} م²`, l: 'لكل 1 كلغ' }, { v: 'مطاطي', l: 'يملأ الشقوق الصغيرة' }].map(s => (
@@ -284,9 +331,28 @@ export default function LandingPageProelasticLP({ config, onPurchase }: { config
           </div>
         </section>
 
+        {/* DÉMONSTRATION RÉELLE */}
+        <Section className="bg-[#071530] text-white">
+          <div className="text-center mb-5 pe-reveal"><Kicker dark>اختبار حقيقي بالفيديو</Kicker><H2 dark>كرتون عادي + PROELASTIC<br />= يحمل الماء!</H2>
+            <p className="mt-2 text-[14px] font-semibold text-sky-100/80">دهنّا علبة من الكرتون بـ PROELASTIC وملأناها بالماء: الكرتون حمل الماء والماء لم يتسرب.</p>
+          </div>
+          <div className="pe-reveal max-w-[300px] mx-auto"><DemoVideo {...DEMO_VIDEOS[0]} autoPlay /></div>
+          <details className="mt-4 pe-reveal">
+            <summary className="cursor-pointer text-center text-[13px] font-black text-cyan-300">▶ شاهد تجربة ثانية</summary>
+            <div className="mt-3 max-w-[300px] mx-auto"><DemoVideo {...DEMO_VIDEOS[1]} autoPlay={false} /></div>
+          </details>
+          <div className="pe-reveal mt-6"><HeroIllustration /></div>
+          <p className="mt-2 text-center text-[13px] font-bold text-sky-100/80">نفس الشيء فوق سطحك: الماء يبقى فوق ولا يدخل من الشقوق.</p>
+        </Section>
+
         {/* OFFRES */}
         <Section className="bg-gradient-to-b from-sky-50 to-white">
           <div className="text-center mb-6 pe-reveal"><Kicker>عروض خاصة</Kicker><H2>كلما اشتريت أكثر، وفّرت أكثر</H2></div>
+          <figure className="pe-reveal mb-5 rounded-3xl overflow-hidden bg-white ring-1 ring-slate-200">
+            <img src={PHOTO_SIZES.src} alt={PHOTO_SIZES.alt} width={PHOTO_SIZES.w} height={PHOTO_SIZES.h} loading="lazy" decoding="async"
+              className="w-full h-auto" style={{ aspectRatio: `${PHOTO_SIZES.w} / ${PHOTO_SIZES.h}`, maxHeight: 420, objectFit: 'cover' }} />
+            <figcaption className="p-3 text-center text-[13px] font-bold text-slate-600">علبة 1 كلغ وسطل 5 كلغ – التغليف الأصلي من Profinish</figcaption>
+          </figure>
           <div className="space-y-3">
             {PROELASTIC_PACKAGES.map(p => {
               const best = p.id === '3kg_offer';
@@ -376,6 +442,10 @@ export default function LandingPageProelasticLP({ config, onPurchase }: { config
                 </tbody>
               </table>
             </div>
+            <figure className="mt-5 rounded-3xl overflow-hidden ring-1 ring-white/10">
+              <img src={PHOTO_STOCK.src} alt={PHOTO_STOCK.alt} width={PHOTO_STOCK.w} height={PHOTO_STOCK.h} loading="lazy" decoding="async" className="w-full h-auto" />
+              <figcaption className="p-3 text-[13px] font-bold text-amber-100 bg-white/5">📦 علب PROELASTIC الأصلية متوفرة عندنا: تعرّف على التغليف الأصلي قبل الشراء</figcaption>
+            </figure>
             <p className="mt-4 text-[13px] font-bold text-amber-200">✅ مع YANIS SHOP تستلم PROELASTIC الأصلي، وتفحص العلبة بنفسك قبل الدفع.</p>
           </div>
         </Section>
@@ -475,11 +545,6 @@ export default function LandingPageProelasticLP({ config, onPurchase }: { config
               </div>
             ))}
           </div>
-          {PRODUCT_PHOTOS.length > 1 && (
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              {PRODUCT_PHOTOS.slice(1).map(p => <img key={p.src} src={p.src} alt={p.alt} width={p.w} height={p.h} loading="lazy" className="w-full h-auto rounded-2xl" />)}
-            </div>
-          )}
         </Section>
 
         {/* GARANTIE */}

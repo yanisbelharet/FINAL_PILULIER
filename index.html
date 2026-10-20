@@ -37,7 +37,8 @@
     <script>
       if (location.pathname.indexOf('/lp/') === 0) {
         var l = document.createElement('link');
-        l.rel = 'preload'; l.as = 'image'; l.href = '/lp-assets/med-alarm-hero.webp'; l.setAttribute('fetchpriority', 'high');
+        l.rel = 'preload'; l.as = 'image'; l.setAttribute('fetchpriority', 'high');
+        l.href = location.pathname.indexOf('/lp/proelastic') === 0 ? '/lp-assets/proelastic/pot-1kg.webp' : '/lp-assets/med-alarm-hero.webp';
         document.head.appendChild(l);
       }
     </script>

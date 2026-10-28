@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ShieldCheck, Truck, Banknote, PhoneCall, Droplets, ShoppingCart, Check, ChevronDown, Play, Sparkles, PaintRoller, Sun,
-  Calculator, BadgeCheck, MessageCircle, Eye, Layers, House, Grid3x3, BrickWall, Building2, Warehouse, CloudRain, Gift, Info,
+  Calculator, BadgeCheck, MessageCircle, Eye, Layers, House, Grid3x3, BrickWall, Building2, Waves, Bath, CornerDownLeft, CloudRain, Gift, Info,
 } from 'lucide-react';
 import CheckoutFormPigma, {
   PIGMA_OFFERS, PIGMA_PRODUCT, PIGMA_UNIT_PRICE, PIGMA_BOX_KG, PigmaOfferId, getOffer, da,
@@ -24,7 +24,8 @@ const PHOTO_DROPS = { src: A + 'pot-1-4kg-gouttes.webp', alt: 'علبة Stop Fui
 // Données techniques : n'inventer AUCUN chiffre. Tant que la fiche technique n'est pas trouvée,
 // ces valeurs restent `null` et la page affiche un repère visible [À COMPLÉTER] (voir docs/pigma-sources.md).
 // ----------------------------------------------------------------------------------------------
-const SPEC: { kgPerM2PerCoat: number | null; coats: number | null } = { kgPerM2PerCoat: null, coats: null };
+// coats : « يُفضل تطبيق طبقتين » (fiche du revendeur Fast-Colors-Tlemcen) ; rendement toujours introuvable
+const SPEC: { kgPerM2PerCoat: number | null; coats: number | null } = { kgPerM2PerCoat: null, coats: 2 };
 
 // Vidéo réelle du test à l'eau (fichier dans public/lp-assets/pigma/). null = emplacement réservé.
 const VIDEO: { src: string; poster: string } | null = null;
@@ -159,11 +160,11 @@ const SurfaceDemo = () => (
 );
 
 const FAQ = (deskMin: number, homeMin: number) => [
-  { q: 'شحال تغطي العلبة تاع 1,4 كلغ؟', a: <>حسب الفيش تقنيك: <Todo>rendement kg/m² et nombre de couches</Todo>. كي نأكدو الرقم، الحاسبة الفوق تحسبلك عدد العلب ديريكت.</> },
+  { q: 'شحال تغطي العلبة تاع 1,4 كلغ؟', a: <>يُنصح بطبقتين. الاستهلاك في المتر المربع: <Todo>rendement kg/m² par couche</Todo>. كي نأكدو الرقم، الحاسبة الفوق تحسبلك عدد العلب ديريكت.</> },
   { q: 'شحال من وقت باش ينشف؟', a: <>وقت التنشاف: <Todo>temps de séchage (au toucher / entre couches / complet)</Todo>. ديما اختار نهار شمس وبلا شتا.</> },
   { q: 'نقدر ندهن وكاين الشتا؟', a: <>لا، لازم السطح يكون نقي وناشف. المدة اللي لازم تكون بلا شتا بعد الدهان: <Todo>délai sans pluie après application</Todo>.</> },
-  { q: 'على واش نقدر ندهنو؟', a: <>السطوح المتوافقة حسب الفيش تقنيك: <Todo>liste des supports compatibles</Todo>. على العلبة مكتوب «Membrane élastique étanche – Système anti-infiltrations».</> },
-  { q: 'صح شفاف؟ ما يبدلش لون الزليج؟', a: 'النسخة اللي نبيعوها مكتوب عليها «TRANSPARENT» على العلبة. هي مخصصة للي حاب يحمي السطح بلا ما يبدل شكل الزليج ولا القرمود.' },
+  { q: 'على واش نقدر ندهنو؟', a: <>السطوح والتيراسات، البالكونات والدروج، خزانات الماء والأحواض، الحمامات والكوزينات (البلايص اللي فيها الرطوبة)، والتسربات في الزوايا وحول الترابيات. يتدهن من الجهة اللي يدخل منها الماء.</> },
+  { q: 'صح شفاف؟ ما يبدلش لون الزليج؟', a: 'النسخة اللي نبيعوها مكتوب عليها «TRANSPARENT» على العلبة. هي مخصصة للي حاب يحمي السطح بلا ما يبدل المظهر الطبيعي تاع السطح ولا الزليج.' },
   { q: 'شحال يدوم؟ يقاوم الشمس؟', a: <>المدة ومقاومة الشمس (UV): <Todo>durabilité et résistance UV selon le fabricant</Todo>.</> },
   { q: 'لازمني عامل مختص؟', a: 'التطبيق يكون بالرولو ولا البروسة كيما الصباغة، تقدر تديرو وحدك. تبّع الخطوات اللي الفوق.' },
   { q: 'كيفاش نخلص؟', a: 'الدفع عند الاستلام: ما تخلص والو دركا. تستلم الطلب، تشوفو، ومن بعد تخلص لعامل التوصيل.' },
@@ -318,7 +319,8 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
 
   const deskMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.desk));
   const homeMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.home));
-  const heroBg = ambiance('hero-rain-roof');
+  // variante légère 480 px (scripts/gen-image.mjs) : le fond est à 30 % d'opacité
+  const heroBg = ambiance('hero-rain-roof')?.replace('.webp', '-sm.webp');
 
   return (
     <div className="pg-root min-h-screen bg-[#F3F7FB] font-sans text-slate-800 overflow-x-hidden" dir="rtl" lang="ar">
@@ -333,7 +335,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
 
       {/* HERO */}
       <header id="pg-hero" className="relative bg-[#0B1B3F] text-white overflow-hidden">
-        {heroBg && <img src={heroBg} alt="" aria-hidden="true" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-30" />}
+        {heroBg && <img src={heroBg} alt="" aria-hidden="true" decoding="async" fetchPriority="low" className="absolute inset-0 w-full h-full object-cover opacity-30" />}
         <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_0%,rgba(46,196,241,.28),transparent_60%),linear-gradient(180deg,rgba(11,27,63,.4),#0B1B3F_92%)]" aria-hidden="true" />
         <Beads n={16} seed={5} />
         <div className="relative max-w-5xl mx-auto px-4 pt-6 pb-12 lg:pt-14 lg:pb-20 flex flex-col lg:grid lg:grid-cols-[1.05fr_.95fr] lg:gap-x-12 lg:[grid-template-areas:'title_photo''text_photo'] lg:items-center">
@@ -369,7 +371,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
           <div className="mt-7 lg:mt-0 lg:[grid-area:text] lg:self-start">
             <p className="text-[16px] lg:text-[19px] font-semibold text-sky-100/90 leading-relaxed lg:mt-5">
               <b className="text-white">Stop Fuites</b> من <b className="text-white">Pigma Color</b>، النسخة <b className="text-white">الشفافة</b>:
-              غشاء مرن ومانع للتسربات يتدهن من برّا، يحمي السطح وما يبدلش شكل الزليج ولا القرمود.
+              غشاء مرن ومانع للتسربات يتدهن من برّا، يحمي السطح وما يبدلش الشكل الطبيعي تاع الزليج.
             </p>
             <ul className="mt-5 grid grid-cols-3 gap-2 text-center text-[12px] font-bold">
               {[{ Icon: Eye, t: 'شفاف' }, { Icon: Layers, t: 'غشاء مرن' }, { Icon: ShieldCheck, t: 'ضد التسربات' }].map(({ Icon, t }) => (
@@ -417,7 +419,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
             </p>
             <ul className="mt-5 space-y-3">
               {[
-                { t: 'شفاف: ما يبدلش الشكل', d: 'النسخة «TRANSPARENT» تخلّي الزليج، القرمود ولا الدالة كيما راهم.' },
+                { t: 'شفاف: ما يبدلش الشكل', d: 'النسخة «TRANSPARENT» تحافظ على المظهر الطبيعي: الزليج ولا الدالة يبقاو كيما راهم.' },
                 { t: 'مرن (élastique)', d: 'غشاء مرن يتبع حركة السطح مع السخانة والبرد.' },
                 { t: 'تطبيق ساهل', d: 'بالرولو ولا البروسة، بلا تكسير وبلا معلم مختص.' },
               ].map(b => (
@@ -442,22 +444,22 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
       {/* OÙ L'UTILISER */}
       <Section className="bg-white" wide>
         <div className="text-center pg-reveal"><Kicker>وين نستعملو؟</Kicker><H2>السطوح اللي يتدهن عليها</H2>
-          <p className="mt-2 text-[14px] font-semibold text-slate-500">القائمة لازم تتأكد من الفيش تقنيك: <Todo>supports compatibles officiels</Todo></p>
+          <p className="mt-2 text-[14px] font-semibold text-slate-500">الاستعمالات اللي يذكرها البائعين. القائمة الرسمية: <Todo>fiche technique Pigma Color</Todo></p>
         </div>
-        <div className="mt-7 grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <AmbientFigure id="terrace-tiles-rain" alt="تيراس مزلّج أبيض بعد الشتا" Icon={Grid3x3} className="pg-reveal mt-6 rounded-3xl h-44 lg:h-64" />
+        <div className="mt-4 grid grid-cols-2 lg:grid-cols-3 gap-3">
           {[
-            { Icon: House, t: 'السطح (الدالة)', d: 'سطوح البيتون' },
-            { Icon: Grid3x3, t: 'التيراس والزليج', d: 'يخلّي شكل الزليج' },
-            { Icon: Warehouse, t: 'القرمود', d: 'السقف المايل' },
-            { Icon: Building2, t: 'البالكونات', d: 'الأرضية والحواف' },
-            { Icon: BrickWall, t: 'الحيوط من برّا', d: 'الواجهات' },
-            { Icon: Layers, t: 'البيتون', d: 'الأسطح الإسمنتية' },
+            { Icon: House, t: 'السطح (الدالة)', d: 'سطوح الديار' },
+            { Icon: Grid3x3, t: 'التيراس', d: 'يخلّي شكل الزليج' },
+            { Icon: Building2, t: 'البالكونات والدروج', d: 'الأرضية والحواف' },
+            { Icon: Waves, t: 'خزانات الماء والأحواض', d: 'الريزيرفوار والبيسان' },
+            { Icon: Bath, t: 'الحمام والكوزينة', d: 'البلايص الرطبة' },
+            { Icon: CornerDownLeft, t: 'الزوايا والترابيات', d: 'تسربات حول القنوات' },
           ].map(({ Icon, t, d }) => (
             <div key={t} className="pg-reveal relative rounded-3xl p-4 bg-[#F3F7FB] ring-1 ring-sky-100 text-center">
               <span className="mx-auto mb-2 w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center"><Icon size={26} className="text-[#1366d6]" /></span>
               <p className="font-black text-[15px] text-[#0B1B3F]">{t}</p>
               <p className="text-[12.5px] font-semibold text-slate-500">{d}</p>
-              <p className="mt-1.5 text-[10.5px] font-black text-amber-700">⚠ للتأكيد</p>
             </div>
           ))}
         </div>
@@ -469,9 +471,9 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
         <div className="mt-7 lg:grid lg:grid-cols-[1.1fr_.9fr] lg:gap-10">
           <ol className="space-y-3">
             {[
-              { Icon: Sparkles, t: 'نقّي السطح', d: 'نحّي الغبرة، الوسخ، والطلاء اللي راهو يتقشر.' },
+              { Icon: Sparkles, t: 'نقّي السطح مليح', d: 'نحّي الغبرة، الوسخ والزيوت، والطلاء اللي راهو يتقشر.' },
               { Icon: Sun, t: 'خلّيه ينشف مليح', d: <>السطح لازم يكون ناشف قبل الدهان. ظروف التطبيق: <Todo>température min/max et délai sans pluie</Todo></> },
-              { Icon: PaintRoller, t: 'ادهن بالرولو ولا البروسة', d: <>ركّز على الشقوق والزوايا والفواصل. عدد الطبقات: <Todo>nombre de couches</Todo></> },
+              { Icon: PaintRoller, t: 'ادهن بالرولو ولا البروسة', d: <>ركّز على الشقوق والزوايا والفواصل. يُنصح بـ <b>طبقتين</b> باش تكون النتيجة أحسن.</> },
               { Icon: Droplets, t: 'خلّيه ينشف', d: <>ما تمشيش عليه وما يمسوش الماء حتى ينشف: <Todo>temps de séchage</Todo></> },
             ].map((s, i) => (
               <li key={s.t} className="pg-reveal flex gap-3 rounded-3xl bg-white p-4 ring-1 ring-slate-200">
@@ -541,7 +543,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
                 className="mt-4 w-full h-[54px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] font-black text-[17px] active:scale-[0.98] transition-transform">اطلب العرض المناسب</button>
             ) : (
               <p className="mt-4 rounded-2xl bg-white/10 p-3 text-[13px] font-semibold text-sky-100/85 flex items-start gap-2">
-                <Info size={17} className="shrink-0 mt-0.5" /> <span>الحساب يتفعّل كي نأكدو الاستهلاك من الفيش تقنيك: <Todo>rendement kg/m² × nombre de couches</Todo></span>
+                <Info size={17} className="shrink-0 mt-0.5" /> <span>الحساب يتفعّل كي نأكدو الاستهلاك في المتر المربع (طبقتين): <Todo>rendement kg/m² par couche</Todo></span>
               </p>
             )}
             {calcReady && <p className="mt-2 text-[11.5px] text-sky-100/60 font-semibold">الحساب: {spec.kgPerM2PerCoat} كلغ/م² × {spec.coats} طبقات. السطح اللي يشرب بزاف يقدر يحتاج أكثر شوية.</p>}

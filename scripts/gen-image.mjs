@@ -3,6 +3,7 @@
 //   node scripts/gen-image.mjs              -> génère toutes les images manquantes
 //   node scripts/gen-image.mjs --force      -> régénère tout
 //   node scripts/gen-image.mjs hero-rain    -> génère seulement les id indiqués
+// Derrière un proxy HTTPS (ex. Claude Code cloud) : préfixer par NODE_USE_ENV_PROXY=1
 // Les identifiants sont lus dans .env (jamais commité, jamais envoyé au client).
 // Les images servent UNIQUEMENT d'ambiance : ce ne sont ni des résultats réels, ni des photos de clients, ni des avant/après.
 import 'dotenv/config';
@@ -31,7 +32,7 @@ export const IMAGES = [
   { id: 'peeling-paint', prompt: `Interior wall with blistering and peeling paint bubbles caused by humidity infiltration, cracked plaster, close-up, ${STYLE}` },
   { id: 'terrace-tiles-rain', prompt: `White ceramic tiled terrace of an Algerian house just after rain, small water beads on the glossy tiles, low angle, cloudy Mediterranean sky, ${STYLE}` },
   { id: 'roof-tiles-rain', prompt: `Red clay roof tiles of a house in Kabylie Algeria under rain, water droplets, green hills in the background, moody clouds, ${STYLE}` },
-  { id: 'roller-apply', prompt: `Hands applying a clear transparent liquid coating with a paint roller on a clean grey concrete rooftop, sunny dry day, close-up on the roller, ${STYLE}` },
+  { id: 'roller-apply', prompt: `Rooftop terrace floor of beige terracotta tiles seen at low angle, the left half of the floor is glossy and shiny as if wet with sky reflections, the right half is matte and dry, a paint roller handle lying on the boundary line, same tile color on both sides, ${STYLE}` },
   { id: 'house-after-storm', prompt: `Two-storey white Algerian house with a flat roof terrace at golden hour after a storm, clearing sky, wet street, calm atmosphere, ${STYLE}` },
 ];
 
@@ -47,6 +48,8 @@ const run = async (img) => {
   if (!b64) throw new Error('Pas d\'image dans la réponse');
   const file = path.join(OUT_DIR, `${img.id}.webp`);
   await sharp(Buffer.from(b64, 'base64')).resize({ width: 1024, withoutEnlargement: true }).webp({ quality: 75 }).toFile(file);
+  // Variante légère (fond du hero, affiché en transparence : ne doit pas retarder le LCP)
+  await sharp(Buffer.from(b64, 'base64')).resize({ width: 480 }).webp({ quality: 45 }).toFile(path.join(OUT_DIR, `${img.id}-sm.webp`));
   return file;
 };
 

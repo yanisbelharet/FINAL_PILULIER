@@ -294,7 +294,7 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
             <button type="button" aria-label="نقّص" onClick={() => onCountChange(Math.max(1, count - 1))}
               className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 text-slate-700 flex items-center justify-center active:scale-90 transition-transform"><Minus size={18} /></button>
             <span className="text-xl font-black text-slate-900 w-6 text-center" aria-live="polite">{count}</span>
-            <button type="button" aria-label="زيد" onClick={() => onCountChange(Math.min(10, count + 1))}
+            <button type="button" aria-label="زيد" onClick={() => onCountChange(Math.min(50, count + 1))}
               className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 text-slate-700 flex items-center justify-center active:scale-90 transition-transform"><Plus size={18} /></button>
           </div>
         </div>

@@ -1,7 +1,7 @@
 # Pigma Color Stop Fuites (version transparente) – sources de la landing `/lp/pigma-stop-fuites`
 
 Recherche faite le 28/10/2026. Règle suivie : **aucun chiffre inventé**. Toute information non trouvée apparaît
-sur la page avec un repère visible `[À COMPLÉTER : …]` (voir la liste en bas).
+sur la page avec un repère visible `[À COMPLÉTER : …]` (voir « Reste [À COMPLÉTER] »).
 
 > Mise à jour du 28/10/2026 (accès réseau ouvert) : la fiche complète du revendeur Fast-Colors-Tlemcen a pu être lue.
 > Le site officiel `pigmacolor.dz` coupe la connexion (indisponible) et Jumia renvoie 403.
@@ -31,20 +31,35 @@ sur la page avec un repère visible `[À COMPLÉTER : …]` (voir la liste en ba
   acrylique élastique **différent** de Stop Fuites. Ses caractéristiques n'ont pas été reprises.
 - Chiffres de produits concurrents (Soudal, Aquaplan, Bostik Waterstop, StopFuite™, PROCOM…) : non applicables.
 
-## Informations introuvables → `[À COMPLÉTER]` sur la page
+## Données fournies par la boutique (YANIS SHOP, 28/10/2026)
+
+Transmises par le propriétaire de la boutique, avec ses références. **Les PDF Pigma cités n'ont pas pu être relus**
+(le bucket S3 de Pigma renvoie « AllAccessDisabled »). Attention : une partie de ces références décrit aussi la
+« Peinture étanche » de Pigma (même formulation « terrasses peu accessibles, balcons, loggias et murs » que sur Jumia).
+
+| Information | Valeur retenue sur la page | Source indiquée |
+|---|---|---|
+| Rendement | **0,3 à 0,5 kg/m² par couche** (rendement pratique constaté en magasin) ; la calculatrice compte 0,5 kg × 2 couches | Boutique (correction du 0,8–1 kg/m² d'abord cité) |
+| Préparation | support sec à 100 % (sinon le produit blanchit et cloque) ; brosser, dépoussiérer, dégraisser par lessivage, pas d'acide fort ; joints propres et sains | Boutique |
+| Outils | brosse pour faire pénétrer dans les joints ; rouleau laqueur / poil court pour les surfaces planes | Boutique |
+| Étapes | 1) couche de préparation diluée à 10–20 % d'eau, 6 h de séchage ; 2) 1re couche pure, 24 h ; 3) 2e couche pure croisée | Boutique ; fiche Pigma `WOtCEPDyrHWz4ww3LXJc78han0KIRAOt691qOm1I.pdf` |
+| Pluie | pas de pluie dans les 24 à 48 h après application | Boutique |
+| Température / humidité | entre 5 °C et 35 °C, humidité < 80 % ; éviter l'après-midi en plein soleil d'été, privilégier le début de matinée | Boutique ; fiches Pigma `OR524s48…pdf`, `WOtCEP…pdf` |
+| Aspect | liquide et légèrement laiteux à l'application, transparent seulement après séchage complet | Boutique ; visible dans la vidéo officielle Pigma Color |
+| Durabilité / UV | résine acrylique souple résistant au soleil, aux UV et aux variations thermiques | Boutique ; worx-store.com (« مقاومة العوامل الجوية ») ; Instagram Pigma |
+| Surfaces | terrasses (peu circulées), balcons, loggias, murs ; carrelage, faïence, briques si dégraissés ; réservoirs, salles de bain (revendeur) | Boutique ; fiche Pigma ; Fast-Colors-Tlemcen ; worx-store.com |
+
+## Vidéo
+
+`public/lp-assets/pigma/test-eau.mp4` (+ affiche `test-eau.webp`) : extrait 0:36–1:20 de la vidéo officielle Pigma Color
+fournie par la boutique (application sur terrasse, puis caisse en carton remplie d'eau, « بعد 48 ساعة الكرتون بقى صحيح »).
+La carte de contact de fin (téléphones, adresse, site) est coupée. Chargée uniquement au clic.
+
+## Reste `[À COMPLÉTER]` sur la page
 
 | Où sur la page | Information manquante |
 |---|---|
-| Calculatrice + FAQ « شحال تغطي العلبة » | Rendement (kg/m² par couche) → `SPEC.kgPerM2PerCoat` dans `src/LandingPagePigma.tsx` (`coats` = 2, d'après le revendeur) |
-| Étapes d'application (étape 4) + FAQ « شحال من وقت باش ينشف » | Temps de séchage (au toucher / entre couches / complet) |
-| Étapes d'application (étape 2) + FAQ « نقدر ندهن وكاين الشتا » | Conditions : température min/max, délai sans pluie après application |
-| Section « السطوح » | Confirmation de la liste par la fiche officielle Pigma Color (les 6 cartes reprennent la liste du revendeur) |
-| Section « الحل » + FAQ « شحال يدوم » | Durabilité et résistance aux UV |
 | FAQ livraison | Délai de livraison habituel |
-| Section « كيفاش تدهنو » | Vidéo réelle du test à l'eau → constante `VIDEO` dans `src/LandingPagePigma.tsx` |
-
-Pour compléter : demander la fiche technique à Pigma Color (ou la lire sur l'emballage), remplacer `SPEC` par
-`{ kgPerM2PerCoat: X, coats: N }`, puis remplacer chaque `<Todo>…</Todo>` par le texte définitif.
 
 ## Images d'ambiance générées (Cloudflare Workers AI, Flux schnell)
 

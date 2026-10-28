@@ -801,7 +801,7 @@ const wilayaMap: Record<string, string> = {
       if (isLibya) {
         text = `🛒 *طلبية جديدة من ليبيا 🇱🇾 #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n📦 *العرض والكمية:* ${quantity || 1} قطعة (${bundleTitle || productName || 'منبه الدواء'})\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}${secondaryPhone ? `\n📱 *هاتف إضافي:* ${secondaryPhone}` : ''}\n📍 *المدينة / المنطقة:* ${city || wilaya}\n🏠 *العنوان بالتفصيل:* ${address || commune || 'غير محدد'}\n🚚 *التوصيل:* لباب المنزل (الدفع عند الاستلام)\n💰 *المبلغ المطلوب:* ${price} د.ل (دينار ليبي)`;
       } else {
-        text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n📦 *الكمية:* ${quantity || 1}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
+        text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n📦 *الكمية:* ${quantity || 1}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}${address && address !== commune ? `\n🏠 *العنوان:* ${String(address).replace(/[_*`\[\]]/g, ' ')}` : ''}${bundleTitle ? `\n🎁 *العرض:* ${String(bundleTitle).replace(/[_*`\[\]]/g, ' ')}` : ''}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
       }
 
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {

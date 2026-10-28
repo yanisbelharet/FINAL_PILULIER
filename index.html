@@ -24,7 +24,15 @@
     </noscript>
 
     <!-- Preload LCP Hero Image -->
-    <link rel="preload" as="image" href="https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/HxVCmxikiwh6FWU4vOJ9898xYRoXH5n8uTCqLIP3.webp" fetchpriority="high" />
+    <!-- (les landing pages /lp/ préchargent leur propre hero plus bas) -->
+    <script>
+      if (location.pathname.indexOf('/lp/') !== 0) {
+        var h = document.createElement('link');
+        h.rel = 'preload'; h.as = 'image'; h.setAttribute('fetchpriority', 'high');
+        h.href = 'https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/HxVCmxikiwh6FWU4vOJ9898xYRoXH5n8uTCqLIP3.webp';
+        document.head.appendChild(h);
+      }
+    </script>
     <!-- App mobile /app : manifeste d'installation (n'affecte pas les autres pages) -->
     <script>
       if (/^\/app(\/|$)/.test(location.pathname)) {
@@ -38,7 +46,9 @@
       if (location.pathname.indexOf('/lp/') === 0) {
         var l = document.createElement('link');
         l.rel = 'preload'; l.as = 'image'; l.setAttribute('fetchpriority', 'high');
-        l.href = location.pathname.indexOf('/lp/proelastic') === 0 ? '/lp-assets/proelastic/pot-1kg.webp' : '/lp-assets/med-alarm-hero.webp';
+        l.href = location.pathname.indexOf('/lp/proelastic') === 0 ? '/lp-assets/proelastic/pot-1kg.webp'
+          : location.pathname.indexOf('/lp/pigma-stop-fuites') === 0 ? '/lp-assets/pigma/pot-transparent-1-4kg.webp'
+          : '/lp-assets/med-alarm-hero.webp';
         document.head.appendChild(l);
       }
     </script>

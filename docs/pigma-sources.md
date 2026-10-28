@@ -57,9 +57,7 @@ La carte de contact de fin (téléphones, adresse, site) est coupée. Chargée u
 
 ## Reste `[À COMPLÉTER]` sur la page
 
-| Où sur la page | Information manquante |
-|---|---|
-| FAQ livraison | Délai de livraison habituel |
+Plus rien. Délai de livraison (boutique) : 24 h, 48 h au maximum — FAQ et bloc de réassurance.
 
 ## Images d'ambiance générées (Cloudflare Workers AI, Flux schnell)
 

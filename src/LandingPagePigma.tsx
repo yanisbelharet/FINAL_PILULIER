@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ShieldCheck, Truck, Banknote, PhoneCall, Droplets, ShoppingCart, Check, ChevronDown, Play, Sparkles, PaintRoller, Sun,
-  Calculator, BadgeCheck, MessageCircle, Eye, Layers, House, Grid3x3, BrickWall, Building2, Waves, Bath, CloudRain, Gift, Info,
+  Calculator, BadgeCheck, MessageCircle, Eye, Layers, CloudRain, Gift,
 } from 'lucide-react';
-import CheckoutFormPigma, {
-  PIGMA_OFFERS, PIGMA_PRODUCT, PIGMA_UNIT_PRICE, PIGMA_BOX_KG, PigmaOfferId, getOffer, da,
-} from './CheckoutFormPigma';
+import CheckoutFormPigma, { PIGMA_PRODUCT, PIGMA_UNIT_PRICE, PIGMA_BOX_KG, getOffer, da, boxesLabel } from './CheckoutFormPigma';
 import { DELIVERY_PRICES } from './data';
 import ambianceList from './pigma-ambiance.json';
 
@@ -14,26 +12,21 @@ const SOURCE_TAG = 'LP pigma-stop-fuites';
 const WHATSAPP = '213557920685';
 const A = '/lp-assets/pigma/';
 
-// Vraies photos fournies par la boutique (boîte non retouchée)
+// Vraie photo fournie par la boutique (boîte non retouchée)
 const PHOTO_HERO = { src: A + 'pot-transparent-1-4kg.webp', alt: 'علبة Pigma Color Stop Fuites الشفافة 1,4 كلغ', w: 495, h: 619 };
-const PHOTO_SIZES = { src: A + 'pots-1-4kg-5kg-pluie.webp', alt: 'علبة Stop Fuites 1,4 كلغ فوق سطل 5 كلغ (النسخة الشفافة) تحت الشتا', w: 370, h: 828 };
-const PHOTO_HAND = { src: A + 'pot-1-4kg-en-main.webp', alt: 'علبة Stop Fuites 1,4 كلغ في اليد', w: 370, h: 828 };
-const PHOTO_DROPS = { src: A + 'pot-1-4kg-gouttes.webp', alt: 'علبة Stop Fuites 1,4 كلغ عليها قطرات الماء', w: 480, h: 640 };
-
-// ----------------------------------------------------------------------------------------------
-// Données techniques : n'inventer AUCUN chiffre. Tant que la fiche technique n'est pas trouvée,
-// ces valeurs restent `null` et la page affiche un repère visible [À COMPLÉTER] (voir docs/pigma-sources.md).
-// ----------------------------------------------------------------------------------------------
-// Rendement pratique fourni par la boutique : 0,3 à 0,5 kg/m² par couche ; 2 couches (fiche revendeur Fast-Colors-Tlemcen).
-// Le calcul utilise le haut de la fourchette (kgPerM2PerCoat) pour que le client ne manque jamais de produit.
-const SPEC: { kgPerM2PerCoat: number | null; kgPerM2PerCoatMin: number | null; coats: number | null } = { kgPerM2PerCoat: 0.5, kgPerM2PerCoatMin: 0.3, coats: 2 };
 
 // Vidéo officielle Pigma Color (extrait 0:36–1:20 : application sur terrasse + test de la caisse en carton, sans la carte de contact)
-const VIDEO: { src: string; poster: string } | null = { src: A + 'test-eau.mp4', poster: A + 'test-eau.webp' };
+const VIDEO = { src: A + 'test-eau.mp4', poster: A + 'test-eau.webp' };
 
-// Images d'ambiance générées (scripts/gen-image.mjs) : illustratives uniquement
-const AMBIANCE = new Set<string>(ambianceList as string[]);
-const ambiance = (id: string) => (AMBIANCE.has(id) ? `/images/pigma/${id}.webp` : null);
+// Rendement fourni par la boutique : 1 kg couvre 4 m² en deux couches, donc une boîte de 1,4 kg ≈ 5,6 m²
+const M2_PER_KG = 4;
+const M2_PER_BOX = PIGMA_BOX_KG * M2_PER_KG;
+// Au-delà, la boutique fait un tarif personnalisé
+const CALC_MAX_BOXES = 9;
+const offerForBoxes = (n: number) => (n <= 1 ? 'pack1' : n <= 3 ? 'pack3' : n <= 6 ? 'pack6' : n === 7 ? 'combo7' : 'combo9');
+
+// Fond du hero (image d'ambiance générée, variante légère 480 px affichée à 30 % d'opacité)
+const heroBg = (ambianceList as string[]).includes('hero-rain-roof') ? '/images/pigma/hero-rain-roof-sm.webp' : null;
 
 const usdRate = (config: any) => (Number(config?.usdRate) > 0 ? Number(config.usdRate) : 250);
 
@@ -48,65 +41,28 @@ const whenReady = (check: () => boolean, fn: () => void, timeoutMs = 10000) => {
   return () => clearInterval(id);
 };
 
-// Offre la moins chère (un seul type d'offre) pour un nombre de boîtes ; à égalité on garde le plus grand pack
-const bestOffer = (boxesNeeded: number) => {
-  const options = PIGMA_OFFERS.map(o => {
-    const count = Math.max(1, Math.ceil(boxesNeeded / o.boxes));
-    return { offer: o, count, cost: count * o.price, boxes: count * o.boxes };
-  });
-  return options.sort((a, b) => a.cost - b.cost || b.offer.boxes - a.offer.boxes)[0];
-};
-
 const STYLES = `
-.pg-root { --ink:#0B1B3F; --ink2:#0E2A5C; --aqua:#2EC4F1; --sun:#FFD60A; }
 @keyframes pg-shine { 0% { transform: translateX(120%) } 60%,100% { transform: translateX(-220%) } }
 @keyframes pg-bead { 0%,100% { transform: scale(1) } 50% { transform: scale(1.07) } }
-@keyframes pg-slide { 0% { transform: translateY(-10%); opacity: 0 } 12% { opacity: 1 } 100% { transform: translateY(520%); opacity: 0 } }
 @keyframes pg-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(37,211,102,.55) } 70% { box-shadow: 0 0 0 12px rgba(37,211,102,0) } }
 .pg-shine::after { content:''; position:absolute; inset:0; width:40%; background:linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent); animation: pg-shine 3.4s ease-in-out infinite; }
 /* goutte "verre mouillé" : reflet en haut, ombre portée en bas */
 .pg-drop { position:absolute; border-radius:50%; background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0 10%, rgba(255,255,255,.28) 24%, rgba(150,215,255,.10) 55%, rgba(10,40,90,.28) 100%); box-shadow: 0 2px 3px rgba(0,0,0,.25), inset 0 -2px 3px rgba(255,255,255,.25); }
 .pg-bead { animation: pg-bead 3s ease-in-out infinite; }
-.pg-runner { animation: pg-slide 4.5s cubic-bezier(.55,0,.75,.4) infinite; }
 .pg-wa { animation: pg-pulse 2.4s infinite; }
 .pg-offer:active { transform: scale(.985); }
-.pg-todo { display:inline-block; max-width:100%; background:#FEF3C7; color:#92400E; border:1px dashed #D97706; border-radius:6px; padding:0 .35em; font-weight:800; font-size:.86em; direction:ltr; unicode-bidi:isolate; }
-.pg-wave { display:block; width:100%; height:28px; }
 @media (prefers-reduced-motion: reduce) {
-  .pg-bead,.pg-runner,.pg-wa { animation: none !important; }
+  .pg-bead,.pg-wa { animation: none !important; }
   .pg-shine::after { display: none; }
   html { scroll-behavior: auto; }
 }`;
 
-// Repère visible pour une information introuvable
-const Todo = ({ children }: { children: React.ReactNode }) => <span className="pg-todo">[À COMPLÉTER : {children}]</span>;
-
 const Section = ({ id, className = '', children, wide = false }: { id?: string; className?: string; children: React.ReactNode; wide?: boolean }) => (
-  <section id={id} className={`px-4 py-14 lg:py-20 ${className}`}><div className={`mx-auto ${wide ? 'max-w-5xl' : 'max-w-xl lg:max-w-3xl'}`}>{children}</div></section>
-);
-const Kicker = ({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) => (
-  <p className={`text-[13px] font-black tracking-wide mb-2 flex items-center gap-1.5 ${dark ? 'text-[#7DD9FF]' : 'text-[#1366d6]'}`}>
-    <Droplets size={14} /> {children}
-  </p>
+  <section id={id} className={`px-4 py-12 lg:py-16 ${className}`}><div className={`mx-auto ${wide ? 'max-w-5xl' : 'max-w-xl'}`}>{children}</div></section>
 );
 const H2 = ({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) => (
-  <h2 className={`text-[28px] lg:text-[38px] leading-[1.25] font-black ${dark ? 'text-white' : 'text-[#0B1B3F]'}`}>{children}</h2>
+  <h2 className={`text-[26px] lg:text-[34px] leading-[1.25] font-black ${dark ? 'text-white' : 'text-[#0B1B3F]'}`}>{children}</h2>
 );
-
-// Image d'ambiance générée, sinon un fond dégradé (jamais présentée comme un résultat réel)
-const AmbientFigure = ({ id, alt, className = '', Icon, children }: {
-  id: string; alt: string; className?: string; Icon?: React.ElementType; children?: React.ReactNode;
-}) => {
-  const src = ambiance(id);
-  return (
-    <figure className={`relative overflow-hidden bg-gradient-to-br from-[#123366] via-[#0E2A5C] to-[#071634] ${className}`}>
-      {src ? <img src={src} alt={alt} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" />
-        : Icon && <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true"><Icon size={64} strokeWidth={1.4} className="text-[#7DD9FF]/45" /></span>}
-      {children}
-      {src && <figcaption className="absolute bottom-2 left-2 text-[10px] font-bold text-white/85 bg-black/35 rounded-full px-2 py-0.5">صورة توضيحية</figcaption>}
-    </figure>
-  );
-};
 
 // Gouttes qui perlent sur une surface (positions déterministes)
 const Beads = ({ n = 14, seed = 7 }: { n?: number; seed?: number }) => {
@@ -123,7 +79,7 @@ const Beads = ({ n = 14, seed = 7 }: { n?: number; seed?: number }) => {
 
 // Surface traitée vs non traitée : les gouttes glissent sur la partie protégée (animée au scroll avec GSAP)
 const SurfaceDemo = () => (
-  <div id="pg-surface" className="relative rounded-[28px] overflow-hidden ring-1 ring-white/10 bg-[#0a1f47]" style={{ aspectRatio: '4 / 3' }}>
+  <div id="pg-surface" className="relative rounded-[28px] overflow-hidden ring-1 ring-slate-200 bg-[#0a1f47]" style={{ aspectRatio: '4 / 3' }}>
     <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full" aria-hidden="true">
       <defs>
         <linearGradient id="pg-tile" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#d9dee6" /><stop offset="1" stopColor="#9aa6b6" /></linearGradient>
@@ -137,14 +93,12 @@ const SurfaceDemo = () => (
       {[-150, -75, 0, 75, 150].map(x => <line key={'v' + x} x1={200 + x * 1.13} y1="70" x2={200 + x * 1.33} y2="300" stroke="#6b7685" strokeWidth="1.2" opacity=".55" />)}
       {/* côté protégé (droite = début de lecture en RTL) : film transparent brillant */}
       <polygon points="200,70 370,70 400,300 200,300" fill="url(#pg-gloss)" />
-      <g className="pg-dry-side">
-        {[[262, 118, 11], [322, 150, 13], [238, 196, 12], [300, 232, 15], [356, 206, 10], [270, 268, 12]].map(([x, y, r], i) => (
-          <g key={i} className="pg-slide-drop" data-i={i}>
-            <ellipse cx={x} cy={y + r * 0.7} rx={r} ry={r * 0.3} fill="rgba(0,0,0,.22)" />
-            <circle cx={x} cy={y} r={r} fill="url(#pg-dropg)" />
-          </g>
-        ))}
-      </g>
+      {[[262, 118, 11], [322, 150, 13], [238, 196, 12], [300, 232, 15], [356, 206, 10], [270, 268, 12]].map(([x, y, r], i) => (
+        <g key={i} className="pg-slide-drop">
+          <ellipse cx={x} cy={y + r * 0.7} rx={r} ry={r * 0.3} fill="rgba(0,0,0,.22)" />
+          <circle cx={x} cy={y} r={r} fill="url(#pg-dropg)" />
+        </g>
+      ))}
       {/* côté non protégé : l'eau pénètre et tache */}
       {[[110, 150, 46], [70, 232, 54], [150, 250, 40]].map(([x, y, r], i) => (
         <ellipse key={i} className="pg-stain" cx={x} cy={y} rx={r} ry={r * 0.55} fill="url(#pg-stain)" />
@@ -161,22 +115,18 @@ const SurfaceDemo = () => (
 );
 
 const FAQ = (deskMin: number, homeMin: number) => [
-  { q: 'شحال تغطي العلبة تاع 1,4 كلغ؟', a: <>الاستهلاك: من 0,3 حتى 0,5 كلغ في المتر المربع للطبقة، ويُنصح بطبقتين. يعني العلبة تاع 1,4 كلغ تغطي تقريباً من 1,4 حتى 2,3 م² بطبقتين. الحاسبة الفوق تحسبلك عدد العلب ديريكت.</> },
-  { q: 'شحال من وقت باش ينشف؟', a: <>طبقة التحضير المخففة: 6 ساعات. الطبقة الأولى الصافية: 24 ساعة قبل الثانية. ومن بعد لازم 24 حتى 48 ساعة بلا شتا باش ينشف من الداخل.</> },
-  { q: 'نقدر ندهن وكاين الشتا؟', a: <>لا. السطح لازم يكون ناشف 100%، وما لازمش تطيح الشتا 24 حتى 48 ساعة من بعد الدهان. إذا بقات الرطوبة تحت المنتج، يبيّض وينفخ. ادهن بين 5° و 35°، خير وقت الصباح بكري.</> },
-  { q: 'على واش نقدر ندهنو؟', a: <>السطوح والتيراسات، البالكونات والدروج، خزانات الماء والأحواض، الحمامات والكوزينات (البلايص اللي فيها الرطوبة)، والتسربات في الزوايا وحول الترابيات. يتدهن من الجهة اللي يدخل منها الماء.</> },
-  { q: 'صح شفاف؟ ما يبدلش لون الزليج؟', a: 'النسخة اللي نبيعوها مكتوب عليها «TRANSPARENT» على العلبة. هي مخصصة للي حاب يحمي السطح بلا ما يبدل المظهر الطبيعي تاع السطح ولا الزليج.' },
-  { q: 'شحال يدوم؟ يقاوم الشمس؟', a: 'مصنوع من راتنج (résine) أكريليك مرن، باش يقاوم الشمس، الأشعة UV وتبدّل السخانة والبرد، ويبقى الغشاء مرن.' },
+  { q: 'شحال تغطي العلبة؟', a: 'كل 1 كلغ يغطي حوالي 4 م² بطبقتين. يعني العلبة تاع 1,4 كلغ تغطي حوالي 5,6 م². استعمل الحاسبة باش تعرف شحال من علبة تلزمك.' },
+  { q: 'شحال من وقت باش ينشف؟', a: 'طبقة التحضير: 6 ساعات. بين الطبقة الأولى والثانية: 24 ساعة. وما لازمش تطيح الشتا 24 حتى 48 ساعة من بعد الدهان.' },
   { q: 'علاش يبان أبيض كي ندهنو؟', a: 'عادي. كي يتدهن يكون سايل وشوية أبيض كي الحليب، ويولي شفاف وما يبانش غير كي ينشف كامل.' },
+  { q: 'على واش نقدر ندهنو؟', a: 'السطح والتيراس، البالكونات، الحيوط والياجور، الزليج والفايونس، الحمام وخزانات الماء. لازم السطح يكون نقي، بلا دسم وناشف 100%.' },
+  { q: 'إذا السطح كبير وتلزمني أكثر من 9 علب؟', a: 'للكميات الأكبر نعطيوك سعر خاص بيك. ابعثلنا على واتساب المساحة تاعك.' },
+  { q: 'شحال سومة التوصيل وشحال يطوّل؟', a: <>عرض 4+2: التوصيل مجاني. علبة وحدة ولا عرض 2+1: حسب الولاية، من {deskMin} د.ج للمكتب ومن {homeMin} د.ج للدار. يوصلك في 24 ساعة، و48 ساعة على الأكثر.</> },
   { q: 'كيفاش نخلص؟', a: 'الدفع عند الاستلام: ما تخلص والو دركا. تستلم الطلب، تشوفو، ومن بعد تخلص لعامل التوصيل.' },
-  { q: 'شحال سومة التوصيل وشحال يطوّل؟', a: <>عرض 6 علب: التوصيل مجاني. عرض 3 علب: حسب الولاية، من {deskMin} د.ج للمكتب ومن {homeMin} د.ج للدار (يبان السعر الصحيح في الاستمارة). الطلب يوصلك في 24 ساعة، و48 ساعة على الأكثر.</> },
-  { q: 'كيفاش نعرف باللي الطلب تسجّل؟', a: 'كي تبعث الاستمارة يبانلك ميساج تأكيد، ومن بعد نعيطولك باش نأكدو العنوان والكمية قبل ما نبعثو.' },
 ];
 
 export default function LandingPagePigma({ config, onPurchase }: { config: any; onPurchase: (p: number, product: any, formData?: any) => void }) {
-  const [offerId, setOfferId] = useState<PigmaOfferId>('pack6');
-  const [count, setCount] = useState(1);
-  const [area, setArea] = useState(20);
+  const [offerId, setOfferId] = useState('pack6');
+  const [area, setArea] = useState(10);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [showSticky, setShowSticky] = useState(false);
   const [videoOn, setVideoOn] = useState(false);
@@ -186,16 +136,6 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
   const gsapRef = useRef<any>(null);
   const rate = usdRate(config);
   const offer = getOffer(offerId);
-
-  // En développement uniquement : ?rendement=0.5&couches=2 pour tester la calculatrice avant d'avoir la fiche technique
-  const spec = useMemo(() => {
-    if (import.meta.env.DEV) {
-      const q = new URLSearchParams(window.location.search);
-      const r = Number(q.get('rendement')), c = Number(q.get('couches'));
-      if (r > 0 && c > 0) return { kgPerM2PerCoat: r, kgPerM2PerCoatMin: r, coats: c };
-    }
-    return SPEC;
-  }, []);
 
   useEffect(() => { document.title = 'Stop Fuites شفاف من Pigma Color – الدفع عند الاستلام'; }, []);
 
@@ -217,18 +157,13 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
   }, []);
 
   // AddToCart à chaque choix d'offre par l'utilisateur
-  const trackAddToCart = (id: PigmaOfferId, n: number) => {
-    const o = getOffer(id);
-    const value = Number(((o.price * n) / rate).toFixed(2));
-    const content = { content_id: PIGMA_PRODUCT.id, content_type: 'product', content_name: PIGMA_PRODUCT.name, quantity: o.boxes * n };
-    if (window.ttq) window.ttq.track('AddToCart', { contents: [content], value, currency: 'USD' });
-    if (window.fbq) window.fbq('track', 'AddToCart', { content_ids: [PIGMA_PRODUCT.id], content_type: 'product', content_name: o.title, value, currency: 'USD', num_items: o.boxes * n });
-  };
-
-  const selectOffer = (id: PigmaOfferId, n = count) => {
+  const selectOffer = (id: string) => {
     setOfferId(id);
-    setCount(n);
-    trackAddToCart(id, n);
+    const o = getOffer(id);
+    const value = Number((o.price / rate).toFixed(2));
+    const content = { content_id: PIGMA_PRODUCT.id, content_type: 'product', content_name: PIGMA_PRODUCT.name, quantity: o.boxes };
+    if (window.ttq) window.ttq.track('AddToCart', { contents: [content], value, currency: 'USD' });
+    if (window.fbq) window.fbq('track', 'AddToCart', { content_ids: [PIGMA_PRODUCT.id], content_type: 'product', content_name: o.title, value, currency: 'USD', num_items: o.boxes });
     const g = gsapRef.current;
     const el = document.querySelector(`[data-offer="${id}"]`);
     if (g && el && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -240,10 +175,10 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
   const handleFirstInteraction = () => {
     if (checkoutFiredRef.current) return;
     checkoutFiredRef.current = true;
-    const value = Number(((offer.price * count) / rate).toFixed(2));
+    const value = Number((offer.price / rate).toFixed(2));
     const content = { content_id: PIGMA_PRODUCT.id, content_type: 'product', content_name: PIGMA_PRODUCT.name };
     if (window.ttq) window.ttq.track('InitiateCheckout', { contents: [content], value, currency: 'USD' });
-    if (window.fbq) window.fbq('track', 'InitiateCheckout', { content_ids: [PIGMA_PRODUCT.id], content_type: 'product', value, currency: 'USD', num_items: offer.boxes * count });
+    if (window.fbq) window.fbq('track', 'InitiateCheckout', { content_ids: [PIGMA_PRODUCT.id], content_type: 'product', value, currency: 'USD', num_items: offer.boxes });
     if (window.gtag && config?.ga4MeasurementId) window.gtag('event', 'begin_checkout', { currency: 'USD', value, items: [{ item_id: PIGMA_PRODUCT.id, item_name: PIGMA_PRODUCT.name, price: value, quantity: 1 }] });
   };
 
@@ -300,38 +235,36 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
     };
   }, []);
 
-  // Calculatrice
-  const calcReady = spec.kgPerM2PerCoat != null && spec.coats != null;
-  const kgNeeded = calcReady ? area * spec.kgPerM2PerCoat! * spec.coats! : 0;
-  const boxesNeeded = calcReady ? Math.max(1, Math.ceil(kgNeeded / PIGMA_BOX_KG)) : 0;
-  const suggestion = calcReady ? bestOffer(boxesNeeded) : null;
+  // Calculatrice (limitée à 9 boîtes ; au-delà, tarif personnalisé)
+  const boxesNeeded = area > 0 ? Math.ceil(area / M2_PER_BOX - 1e-9) : 0;
+  const tooBig = boxesNeeded > CALC_MAX_BOXES;
+  const suggestion = boxesNeeded > 0 && !tooBig ? getOffer(offerForBoxes(boxesNeeded)) : null;
 
   // Compteur animé du nombre de boîtes
   useEffect(() => {
     const el = counterRef.current;
-    if (!el || !calcReady) return;
+    if (!el || tooBig) return;
     const g = gsapRef.current;
     const from = Number(el.textContent) || 0;
     if (!g || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = String(boxesNeeded); return; }
     const obj = { v: from };
-    const tween = g.to(obj, { v: boxesNeeded, duration: 0.6, ease: 'power2.out', onUpdate: () => { el.textContent = String(Math.round(obj.v)); } });
+    const tween = g.to(obj, { v: boxesNeeded, duration: 0.5, ease: 'power2.out', onUpdate: () => { el.textContent = String(Math.round(obj.v)); } });
     return () => { tween.kill(); };
-  }, [boxesNeeded, calcReady]);
+  }, [boxesNeeded, tooBig]);
 
   const deskMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.desk));
   const homeMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.home));
-  // variante légère 480 px (scripts/gen-image.mjs) : le fond est à 30 % d'opacité
-  const heroBg = ambiance('hero-rain-roof')?.replace('.webp', '-sm.webp');
+  const waLink = (text: string) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`;
 
   return (
-    <div className="pg-root min-h-screen bg-[#F3F7FB] font-sans text-slate-800 overflow-x-hidden" dir="rtl" lang="ar">
+    <div className="min-h-screen bg-[#F3F7FB] font-sans text-slate-800 overflow-x-hidden" dir="rtl" lang="ar">
       <style>{STYLES}</style>
 
       {/* Bandeau de réassurance */}
       <div className="bg-[#FFD60A] text-[#0B1B3F] text-[12.5px] font-black py-2 px-3 flex items-center justify-center gap-3">
         <span className="flex items-center gap-1"><Banknote size={15} /> الدفع عند الاستلام</span>
         <span className="w-px h-3.5 bg-[#0B1B3F]/30" />
-        <span className="flex items-center gap-1"><Truck size={15} /> التوصيل لـ 69 ولاية</span>
+        <span className="flex items-center gap-1"><Truck size={15} /> 69 ولاية · 24 حتى 48 ساعة</span>
       </div>
 
       {/* HERO */}
@@ -339,7 +272,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
         {heroBg && <img src={heroBg} alt="" aria-hidden="true" decoding="async" fetchPriority="low" className="absolute inset-0 w-full h-full object-cover opacity-30" />}
         <div className="absolute inset-0 bg-[radial-gradient(120%_70%_at_50%_0%,rgba(46,196,241,.28),transparent_60%),linear-gradient(180deg,rgba(11,27,63,.4),#0B1B3F_92%)]" aria-hidden="true" />
         <Beads n={16} seed={5} />
-        <div className="relative max-w-5xl mx-auto px-4 pt-6 pb-12 lg:pt-14 lg:pb-20 flex flex-col lg:grid lg:grid-cols-[1.05fr_.95fr] lg:gap-x-12 lg:[grid-template-areas:'title_photo''text_photo'] lg:items-center">
+        <div className="relative max-w-5xl mx-auto px-4 pt-6 pb-10 lg:pt-14 lg:pb-16 flex flex-col lg:grid lg:grid-cols-[1.05fr_.95fr] lg:gap-x-12 lg:[grid-template-areas:'title_photo''text_photo'] lg:items-center">
           <div className="lg:[grid-area:title] lg:self-end">
             <p className="inline-flex items-center gap-1.5 text-[12.5px] font-bold bg-white/10 ring-1 ring-white/15 rounded-full px-3 py-1">
               <CloudRain size={14} className="text-[#7DD9FF]" /> التسربات مع الشتا؟
@@ -366,19 +299,13 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
               className="pg-shine relative overflow-hidden w-full h-[60px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] text-[18.5px] font-black flex items-center justify-center gap-2 shadow-xl shadow-yellow-400/20 active:scale-[0.98] transition-transform">
               <ShoppingCart size={21} /> اطلب الآن – الدفع عند الاستلام
             </button>
-            <p className="mt-2 text-center text-[13px] font-semibold text-sky-100/75">ما تخلص والو دركا · تخلص كي تستلم</p>
           </div>
 
-          <div className="mt-7 lg:mt-0 lg:[grid-area:text] lg:self-start">
+          <div className="mt-6 lg:mt-0 lg:[grid-area:text] lg:self-start">
             <p className="text-[16px] lg:text-[19px] font-semibold text-sky-100/90 leading-relaxed lg:mt-5">
               <b className="text-white">Stop Fuites</b> من <b className="text-white">Pigma Color</b>، النسخة <b className="text-white">الشفافة</b>:
-              غشاء مرن ومانع للتسربات يتدهن من برّا، يحمي السطح وما يبدلش الشكل الطبيعي تاع الزليج.
+              غشاء مرن يتدهن من برّا، يسكّر على الماء وما يبدلش شكل الزليج.
             </p>
-            <ul className="mt-5 grid grid-cols-3 gap-2 text-center text-[12px] font-bold">
-              {[{ Icon: Eye, t: 'شفاف' }, { Icon: Layers, t: 'غشاء مرن' }, { Icon: ShieldCheck, t: 'ضد التسربات' }].map(({ Icon, t }) => (
-                <li key={t} className="rounded-2xl bg-white/[.07] ring-1 ring-white/10 py-3 flex flex-col items-center gap-1"><Icon size={20} className="text-[#7DD9FF]" />{t}</li>
-              ))}
-            </ul>
             <div className="hidden lg:block mt-7">
               <button type="button" onClick={toForm}
                 className="pg-shine relative overflow-hidden w-full max-w-md h-[60px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] text-[19px] font-black flex items-center justify-center gap-2 shadow-xl shadow-yellow-400/20 active:scale-[0.98] transition-transform">
@@ -389,276 +316,142 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
         </div>
       </header>
 
-      {/* LE PROBLÈME */}
-      <Section className="bg-white">
-        <div className="pg-reveal"><Kicker>كل شتا نفس الحكاية</Kicker><H2>القطرة ما تجيش وحدها…</H2>
-          <p className="mt-3 text-[16px] font-semibold text-slate-600 leading-relaxed">الماء يدخل من الشقوق الصغار في السطح ولا التيراس، ويبان الضرر في الداخل:</p>
+      {/* VIDÉO : la preuve, juste après le hero (chargée seulement au clic) */}
+      <Section className="bg-[#0E2A5C] text-white">
+        <div className="text-center pg-reveal">
+          <H2 dark>شوف التجربة: الماء ما يدخلش</H2>
+          <p className="mt-2 text-[14.5px] font-semibold text-sky-100/80">فيديو Pigma Color: كرتونة مدهونة عامرة بالماء، وبعد 48 ساعة بقات صحيحة</p>
         </div>
-        <div className="mt-6 grid gap-3 lg:grid-cols-3">
-          {[
-            { id: 'damp-ceiling', Icon: CloudRain, t: 'تبقيع الرطوبة في السقف', d: 'بقع صفرا وكحلة تكبر مع كل شتا، وريحة الرطوبة في البيت.' },
-            { id: 'peeling-paint', Icon: BrickWall, t: 'الصباغة تنفخ وتطيح', d: 'تصبغ، والشتا الجاية ترجع تنفخ وتتقشر من جديد.' },
-            { id: 'roof-tiles-rain', Icon: Banknote, t: 'الإيطانشيتي غالية', d: 'التكسير، المواد، والمعلم المختص… مصاريف كبيرة وأيام خدمة.' },
-          ].map(c => (
-            <article key={c.t} className="pg-reveal rounded-3xl overflow-hidden bg-slate-50 ring-1 ring-slate-200">
-              <AmbientFigure id={c.id} alt={c.t} Icon={c.Icon} className="h-36"><Beads n={6} seed={c.t.length} /></AmbientFigure>
-              <div className="p-4"><p className="font-black text-[17px] text-[#0B1B3F]">{c.t}</p><p className="mt-1 text-[14px] font-semibold text-slate-600">{c.d}</p></div>
-            </article>
-          ))}
+        <div className="pg-reveal relative mt-5 mx-auto w-full max-w-[340px] rounded-[28px] overflow-hidden bg-[#0B1B3F] ring-1 ring-white/10" style={{ aspectRatio: '9 / 16' }}>
+          {videoOn ? (
+            <video src={VIDEO.src} poster={VIDEO.poster} controls autoPlay playsInline preload="none" className="w-full h-full object-cover" />
+          ) : (
+            <button type="button" onClick={() => setVideoOn(true)} className="absolute inset-0 w-full h-full flex items-center justify-center" aria-label="شغّل فيديو تجربة الماء">
+              <img src={VIDEO.poster} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-75" />
+              <span className="relative w-[72px] h-[72px] rounded-full bg-[#FFD60A] text-[#0B1B3F] flex items-center justify-center shadow-xl"><Play size={32} fill="currentColor" /></span>
+            </button>
+          )}
         </div>
       </Section>
 
-      {/* LA SOLUTION */}
-      <section className="relative bg-[#0B1B3F] text-white px-4 py-14 lg:py-20 overflow-hidden">
-        <div className="max-w-5xl mx-auto lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
+      {/* POURQUOI */}
+      <Section className="bg-white" wide>
+        <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
           <div className="pg-reveal">
-            <Kicker dark>الحل</Kicker>
-            <H2 dark>غشاء شفاف يخلّي الماء يزلق<br />وما يدخلش</H2>
-            <p className="mt-3 text-[16px] font-semibold text-sky-100/85 leading-relaxed">
-              على العلبة مكتوب: <b className="text-white" dir="ltr">Membrane élastique étanche</b> و <b className="text-white" dir="ltr">Système anti-infiltrations</b>.
-              يعني طبقة مرنة تتدهن على السطح من برّا وتسكّر الطريق على الماء.
-            </p>
+            <H2>غشاء شفاف يخلّي الماء يزلق وما يدخلش</H2>
             <ul className="mt-5 space-y-3">
               {[
-                { t: 'شفاف: ما يبدلش الشكل', d: 'النسخة «TRANSPARENT» تحافظ على المظهر الطبيعي: الزليج ولا الدالة يبقاو كيما راهم.' },
-                { t: 'مرن (élastique)', d: 'غشاء مرن يتبع حركة السطح مع السخانة والبرد.' },
-                { t: 'تطبيق ساهل', d: 'بالرولو ولا البروسة، بلا تكسير وبلا معلم مختص.' },
-              ].map(b => (
-                <li key={b.t} className="flex gap-3">
-                  <span className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-[#2EC4F1] text-[#0B1B3F] flex items-center justify-center"><Check size={16} strokeWidth={3} /></span>
-                  <div><p className="font-black text-[16px]">{b.t}</p><p className="text-[14px] font-semibold text-sky-100/75">{b.d}</p></div>
+                { Icon: Eye, t: 'شفاف', d: 'ما يبدلش شكل الزليج ولا الدالة.' },
+                { Icon: Layers, t: 'مرن (élastique)', d: 'يتبع حركة السطح مع السخانة والبرد وما يتشققش.' },
+                { Icon: Sun, t: 'يقاوم الشمس', d: 'أكريليك مرن يقاوم الأشعة UV والعوامل الجوية.' },
+                { Icon: PaintRoller, t: 'بلا تكسير وبلا معلم', d: 'يتدهن بالبروسة ولا بالرولو.' },
+              ].map(({ Icon, t, d }) => (
+                <li key={t} className="flex gap-3">
+                  <span className="shrink-0 w-10 h-10 rounded-2xl bg-sky-50 text-[#1366d6] flex items-center justify-center"><Icon size={20} /></span>
+                  <div><p className="font-black text-[16px] text-[#0B1B3F]">{t}</p><p className="text-[14px] font-semibold text-slate-600">{d}</p></div>
                 </li>
               ))}
-              <li className="flex gap-3">
-                <span className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-white/15 flex items-center justify-center"><Sun size={15} /></span>
-                <div><p className="font-black text-[16px]">يقاوم الشمس والعوامل الجوية</p><p className="text-[14px] font-semibold text-sky-100/75">أكريليك مرن يقاوم الأشعة UV، السخانة والبرد.</p></div>
-              </li>
             </ul>
+            <p className="mt-5 text-[13px] font-black text-slate-500">يتدهن على:</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {['السطح والتيراس', 'البالكون', 'الحيوط والياجور', 'الزليج والفايونس', 'الحمام', 'خزانات الماء'].map(t => (
+                <span key={t} className="text-[13px] font-bold text-[#0B1B3F] bg-[#F3F7FB] ring-1 ring-sky-100 rounded-full px-3 py-1.5">{t}</span>
+              ))}
+            </div>
           </div>
           <div className="pg-reveal mt-8 lg:mt-0">
             <SurfaceDemo />
-            <p className="mt-2 text-center text-[13px] font-semibold text-sky-100/70">مرّر للتحت: الماء يزلق على الجهة المدهونة ويدخل في الجهة اللي بلا حماية</p>
           </div>
-        </div>
-      </section>
-
-      {/* OÙ L'UTILISER */}
-      <Section className="bg-white" wide>
-        <div className="text-center pg-reveal"><Kicker>وين نستعملو؟</Kicker><H2>السطوح اللي يتدهن عليها</H2>
-          <p className="mt-2 text-[14px] font-semibold text-slate-500">حسب Pigma Color والبائعين. لازم السطح يكون نقي، بلا غبرة وبلا زيوت.</p>
-        </div>
-        <AmbientFigure id="terrace-tiles-rain" alt="تيراس مزلّج أبيض بعد الشتا" Icon={Grid3x3} className="pg-reveal mt-6 rounded-3xl h-44 lg:h-64" />
-        <div className="mt-4 grid grid-cols-2 lg:grid-cols-3 gap-3">
-          {[
-            { Icon: House, t: 'السطح والتيراس', d: 'التيراسات اللي ما يمشاوش عليها بزاف' },
-            { Icon: Building2, t: 'البالكونات واللوجيا', d: 'الأرضية والحواف' },
-            { Icon: BrickWall, t: 'الحيوط', d: 'وحتى الياجور' },
-            { Icon: Grid3x3, t: 'الزليج والفايونس', d: 'يخلّي الشكل كيما راهو' },
-            { Icon: Waves, t: 'خزانات الماء والأحواض', d: 'الريزيرفوار والبيسان' },
-            { Icon: Bath, t: 'الحمام والكوزينة', d: 'البلايص الرطبة' },
-          ].map(({ Icon, t, d }) => (
-            <div key={t} className="pg-reveal relative rounded-3xl p-4 bg-[#F3F7FB] ring-1 ring-sky-100 text-center">
-              <span className="mx-auto mb-2 w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center"><Icon size={26} className="text-[#1366d6]" /></span>
-              <p className="font-black text-[15px] text-[#0B1B3F]">{t}</p>
-              <p className="text-[12.5px] font-semibold text-slate-500">{d}</p>
-            </div>
-          ))}
         </div>
       </Section>
 
       {/* COMMENT L'APPLIQUER */}
-      <Section className="bg-[#F3F7FB]" wide>
-        <div className="text-center pg-reveal"><Kicker>بلا معلم</Kicker><H2>كيفاش تدهنو؟</H2></div>
-        <div className="mt-7 lg:grid lg:grid-cols-[1.1fr_.9fr] lg:gap-10">
-          <div>
-            <ol className="space-y-3">
-              {[
-                { Icon: Sparkles, t: 'نقّي ونحّي الدسم', d: <>بروسي، نحّي الغبرة و<b>نحّي الدسم</b> بغسيل مليح (ماشي بالأسيد القوي، يخسّر المنتج). الجوانت تاع الزليج لازم يكونو نقيين وصحاح.</> },
-                { Icon: Sun, t: 'ناشف 100%: القاعدة الذهبية', d: <>الزليج ولا البيتون لازم يكون <b>ناشف كامل</b>. إذا بقات الرطوبة في الجوانت، المنتج يحبسها، <b>يبيّض وينفخ</b>.</> },
-                { Icon: Droplets, t: 'طبقة التحضير (مخففة)', d: <>خفّف Stop Fuites بـ <b>10% حتى 20% ماء</b> غير لهاد الطبقة. تدخل في الجوانت والمسام وتسدهم. خلّيها تنشف <b>6 ساعات</b>.</> },
-                { Icon: PaintRoller, t: 'الطبقة الأولى صافية', d: <>بلا ماء. خلّيها تنشف <b>24 ساعة</b>.</> },
-                { Icon: Layers, t: 'الطبقة الثانية بالعكس', d: <>صافية، بصح <b>عكس الاتجاه</b>: إذا الأولى من الفوق للتحت، الثانية من اليمين لليسار. هكذا ما يبقى حتى ثقب صغير.</> },
-              ].map((s, i) => (
-                <li key={s.t} className="pg-reveal flex gap-3 rounded-3xl bg-white p-4 ring-1 ring-slate-200">
-                  <span className="shrink-0 w-12 h-12 rounded-2xl bg-[#0B1B3F] text-[#FFD60A] font-black flex items-center justify-center text-[20px]">{i + 1}</span>
-                  <div className="min-w-0"><p className="font-black text-[16px] text-[#0B1B3F] flex items-center gap-1.5"><s.Icon size={17} className="text-[#1366d6] shrink-0" /> {s.t}</p>
-                    <p className="text-[14px] font-semibold text-slate-600 leading-relaxed">{s.d}</p></div>
-                </li>
-              ))}
-            </ol>
-            <p className="pg-reveal mt-3 rounded-2xl bg-white p-3 text-[13.5px] font-semibold text-slate-600 ring-1 ring-slate-200 flex items-start gap-2">
-              <PaintRoller size={18} className="shrink-0 mt-0.5 text-[#1366d6]" />
-              <span>بالبروسة باش يدخل مليح في الجوانت، ولا بالرولو قصير الشعر (rouleau laqueur) للبلايص المستوية.</span>
-            </p>
-            {/* Les 3 consignes à répéter au client */}
-            <div className="pg-reveal mt-4 rounded-3xl bg-[#0B1B3F] text-white p-4">
-              <p className="font-black text-[17px] mb-3 flex items-center gap-2"><ShieldCheck size={19} className="text-[#FFD60A]" /> 3 حوايج لازم تعرفهم</p>
-              <ul className="space-y-3 text-[14px] font-semibold text-sky-100/90 leading-relaxed">
-                <li className="flex gap-2.5"><CloudRain size={18} className="shrink-0 mt-0.5 text-[#7DD9FF]" /><span><b className="text-white">بلا شتا:</b> شوف الميتيو، ما لازمش تطيح الشتا <b className="text-white">24 حتى 48 ساعة</b> من بعد الدهان. المنتج يخاف من الماء حتى ينشف من الداخل.</span></li>
-                <li className="flex gap-2.5"><Sun size={18} className="shrink-0 mt-0.5 text-[#7DD9FF]" /><span><b className="text-white">الحرارة:</b> بين <b className="text-white">5° و 35°</b> برك، والرطوبة تحت 80%. ما تدهنش العشية تحت شمس الصيف القوية (ينشف من الفوق بزربة وما يشدش). خير وقت: <b className="text-white">الصباح بكري</b>.</span></li>
-                <li className="flex gap-2.5"><Eye size={18} className="shrink-0 mt-0.5 text-[#7DD9FF]" /><span><b className="text-white">أبيض كي تدهنو؟ عادي:</b> كي يتدهن يكون سايل وشوية أبيض كي الحليب. <b className="text-white">يولي شفاف وما يبانش</b> غير كي ينشف كامل.</span></li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-5 lg:mt-0 space-y-3">
-            <AmbientFigure id="roller-apply" alt="تطبيق طبقة شفافة بالرولو على سطح من البيتون" Icon={PaintRoller} className="pg-reveal rounded-3xl h-44 lg:h-56">
-              <Beads n={8} seed={3} />
-            </AmbientFigure>
-            {/* Emplacement vidéo : chargée seulement au clic */}
-            <div className="pg-reveal relative rounded-3xl overflow-hidden bg-[#0B1B3F] ring-1 ring-slate-200" style={{ aspectRatio: '9 / 12' }}>
-              {VIDEO && videoOn ? (
-                <video src={VIDEO.src} poster={VIDEO.poster} controls autoPlay playsInline preload="none" className="w-full h-full object-cover" />
-              ) : (
-                <button type="button" onClick={() => VIDEO && setVideoOn(true)} className="absolute inset-0 w-full h-full text-white" aria-label="شغّل فيديو تجربة الماء">
-                  <img src={VIDEO ? VIDEO.poster : PHOTO_DROPS.src} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-60" />
-                  <span className="absolute inset-0 bg-gradient-to-t from-[#0B1B3F] via-transparent to-transparent" />
-                  <span className="relative mx-auto w-16 h-16 rounded-full bg-[#FFD60A] text-[#0B1B3F] flex items-center justify-center shadow-xl"><Play size={28} fill="currentColor" /></span>
-                  <span className="absolute bottom-4 inset-x-4 text-center">
-                    <span className="block font-black text-[17px]">شوف تجربة الماء بعينيك</span>
-                    <span className="block mt-1 text-[13px] font-semibold text-sky-100/85">فيديو Pigma Color: كرتونة مدهونة عامرة بالماء، وبعد 48 ساعة بقات صحيحة</span>
-                    {!VIDEO && <span className="block mt-1"><Todo>vidéo réelle du test à l'eau</Todo></span>}
-                  </span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+      <Section className="bg-[#F3F7FB]">
+        <div className="text-center pg-reveal"><H2>كيفاش تدهنو؟ 3 خطوات</H2></div>
+        <ol className="mt-6 space-y-3">
+          {[
+            { Icon: Sparkles, t: 'نقّي ونشّف', d: <>نحّي الغبرة والدسم (بلا أسيد قوي). السطح لازم يكون <b>ناشف 100%</b>.</> },
+            { Icon: Droplets, t: 'طبقة تحضير مخففة', d: <>زيد <b>10 حتى 20% ماء</b>، وخلّيها تنشف <b>6 ساعات</b>.</> },
+            { Icon: PaintRoller, t: 'جوج طبقات صافيين', d: <>استنى <b>24 ساعة</b> بيناتهم، والثانية بعكس الاتجاه.</> },
+          ].map((s, i) => (
+            <li key={s.t} className="pg-reveal flex items-center gap-3 rounded-3xl bg-white p-4 ring-1 ring-slate-200">
+              <span className="shrink-0 w-11 h-11 rounded-2xl bg-[#0B1B3F] text-[#FFD60A] font-black flex items-center justify-center text-[19px]">{i + 1}</span>
+              <div className="min-w-0"><p className="font-black text-[16px] text-[#0B1B3F]">{s.t}</p>
+                <p className="text-[14px] font-semibold text-slate-600 leading-relaxed">{s.d}</p></div>
+            </li>
+          ))}
+        </ol>
+        <ul className="pg-reveal mt-4 rounded-3xl bg-[#0B1B3F] text-white p-4 space-y-2.5 text-[14px] font-semibold text-sky-100/90">
+          <li className="flex gap-2.5"><CloudRain size={18} className="shrink-0 mt-0.5 text-[#7DD9FF]" /><span><b className="text-white">بلا شتا</b> 24 حتى 48 ساعة من بعد الدهان.</span></li>
+          <li className="flex gap-2.5"><Sun size={18} className="shrink-0 mt-0.5 text-[#7DD9FF]" /><span><b className="text-white">بين 5° و 35°</b>، خير وقت الصباح بكري (ماشي تحت شمس العشية).</span></li>
+          <li className="flex gap-2.5"><Eye size={18} className="shrink-0 mt-0.5 text-[#7DD9FF]" /><span><b className="text-white">أبيض كي تدهنو؟ عادي</b>، يولي شفاف كي ينشف كامل.</span></li>
+        </ul>
       </Section>
 
       {/* CALCULATEUR */}
       <Section className="bg-white">
-        <div className="pg-reveal relative overflow-hidden rounded-[32px] bg-[#0B1B3F] text-white p-5 lg:p-8">
-          <Beads n={10} seed={9} />
+        <div className="pg-reveal relative overflow-hidden rounded-[28px] bg-[#0B1B3F] text-white p-5">
+          <Beads n={8} seed={9} />
           <div className="relative">
-            <div className="flex items-center gap-2 mb-1"><Calculator size={22} className="text-[#7DD9FF]" /><p className="font-black text-[20px]">شحال من علبة تلزمك؟</p></div>
-            <p className="text-[14px] text-sky-100/80 font-semibold mb-5">اكتب مساحة السطح بالمتر المربع</p>
-            <label htmlFor="pg-area" className="sr-only">المساحة بالمتر المربع</label>
-            <div className="flex items-center gap-3">
-              <input id="pg-area" type="number" inputMode="decimal" min={1} max={1000} value={area}
+            <p className="font-black text-[20px] flex items-center gap-2"><Calculator size={22} className="text-[#7DD9FF]" /> شحال من علبة تلزمك؟</p>
+            <p className="mt-1 text-[13px] text-sky-100/75 font-semibold">العلبة (1,4 كلغ) تغطي حوالي 5,6 م² بطبقتين.</p>
+            <div className="mt-4 flex items-center gap-3">
+              <label htmlFor="pg-area" className="text-[14px] font-bold text-sky-100/90">المساحة</label>
+              <input id="pg-area" type="number" inputMode="decimal" min={1} max={1000} value={area || ''}
                 onChange={e => setArea(Math.min(1000, Math.max(0, Number(e.target.value) || 0)))}
-                className="w-28 h-14 rounded-2xl bg-white text-[#0B1B3F] text-[26px] font-black text-center outline-none ring-4 ring-transparent focus:ring-[#2EC4F1]/60" />
-              <span className="text-[20px] font-black">م²</span>
+                className="w-24 h-12 rounded-xl bg-white text-[#0B1B3F] text-[22px] font-black text-center outline-none ring-4 ring-transparent focus:ring-[#2EC4F1]/60" />
+              <span className="text-[18px] font-black">م²</span>
             </div>
-            <input type="range" min={1} max={200} step={1} value={Math.min(area, 200)} onChange={e => setArea(Number(e.target.value))}
+            <input type="range" min={1} max={60} step={1} value={Math.min(Math.max(area, 1), 60)} onChange={e => setArea(Number(e.target.value))}
               aria-label="مساحة السطح بالمتر المربع" className="mt-4 w-full accent-[#FFD60A] h-2" />
-            <div className="mt-5 grid grid-cols-2 gap-2 text-center">
-              <div className="pg-calc-boxes rounded-2xl bg-white/10 py-4">
-                <p className="text-[12px] text-sky-100/75 font-bold">عدد العلب (1,4 كلغ)</p>
-                <p className="text-[38px] leading-none mt-1 font-black text-[#FFD60A]">{calcReady ? <span ref={counterRef}>0</span> : '—'}</p>
+
+            {tooBig ? (
+              <div className="mt-4 rounded-2xl bg-[#FFD60A] text-[#0B1B3F] p-4">
+                <p className="text-[16px] font-black">تلزمك أكثر من 9 علب</p>
+                <p className="mt-1 text-[14px] font-bold">للكميات الأكبر، نعطيوك سعر خاص بيك.</p>
+                <a href={waLink(`السلام عليكم، حاب سعر خاص لـ Stop Fuites الشفاف. المساحة: ${area} م²`)} target="_blank" rel="noopener noreferrer"
+                  className="mt-3 h-12 rounded-xl bg-[#0B1B3F] text-white font-black flex items-center justify-center gap-2">
+                  <MessageCircle size={19} /> اطلب سعرك على واتساب
+                </a>
               </div>
-              <div className="pg-calc-offer rounded-2xl bg-white/10 py-4 px-2">
-                <p className="text-[12px] text-sky-100/75 font-bold">العرض المناسب</p>
-                {suggestion ? (
-                  <>
-                    <p className="text-[16px] font-black mt-1">{suggestion.count > 1 ? `${suggestion.count} × ` : ''}{suggestion.offer.title}</p>
-                    <p className="text-[12.5px] font-bold text-[#7DD9FF]">{suggestion.boxes} علب · {da(suggestion.cost)}</p>
-                  </>
-                ) : <p className="text-[24px] font-black mt-1">—</p>}
+            ) : suggestion ? (
+              <div className="mt-4 rounded-2xl bg-white/10 p-4 flex items-center gap-4">
+                <div className="text-center shrink-0">
+                  <p className="text-[40px] leading-none font-black text-[#FFD60A]"><span ref={counterRef} /></p>
+                  <p className="text-[12px] font-bold text-sky-100/75">{boxesNeeded === 1 ? 'علبة' : 'علب'}</p>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12px] font-bold text-sky-100/75">العرض المناسب</p>
+                  <p className="text-[15px] font-black leading-snug">{suggestion.title}</p>
+                  <p className="text-[13px] font-bold text-[#7DD9FF]">{boxesLabel(suggestion.boxes)} · {da(suggestion.price)}{suggestion.freeDelivery ? ' · توصيل مجاني' : ''}</p>
+                </div>
               </div>
-            </div>
-            {suggestion ? (
-              <button type="button" onClick={() => { selectOffer(suggestion.offer.id, suggestion.count); toForm(); }}
-                className="mt-4 w-full h-[54px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] font-black text-[17px] active:scale-[0.98] transition-transform">اطلب العرض المناسب</button>
-            ) : (
-              <p className="mt-4 rounded-2xl bg-white/10 p-3 text-[13px] font-semibold text-sky-100/85 flex items-start gap-2">
-                <Info size={17} className="shrink-0 mt-0.5" /> <span>اكتب المساحة باش نحسبولك عدد العلب.</span>
-              </p>
+            ) : null}
+            {suggestion && (
+              <button type="button" onClick={() => { selectOffer(suggestion.id); toForm(); }}
+                className="mt-3 w-full h-[52px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] font-black text-[17px] active:scale-[0.98] transition-transform">اختار هذا العرض</button>
             )}
-            {calcReady && <p className="mt-2 text-[11.5px] text-sky-100/60 font-semibold">الحساب: {spec.coats} طبقات × {String(spec.kgPerM2PerCoat).replace('.', ',')} كلغ/م² (الاستهلاك بين {String(spec.kgPerM2PerCoatMin ?? spec.kgPerM2PerCoat).replace('.', ',')} و {String(spec.kgPerM2PerCoat).replace('.', ',')} كلغ/م² للطبقة). حسبنا على الأكثر باش ما يخصكش.</p>}
+            {!tooBig && <p className="mt-3 text-[12px] font-semibold text-sky-100/65">الحاسبة حتى 9 علب. للكميات الأكبر، نعطيوك سعر خاص.</p>}
           </div>
         </div>
       </Section>
 
-      {/* OFFRES */}
-      <Section id="offres" className="bg-[#F3F7FB]">
-        <div className="text-center pg-reveal"><Kicker>العروض</Kicker><H2>كل ما تدّي أكثر، توفّر أكثر</H2>
-          <p className="mt-2 text-[15px] font-semibold text-slate-500">السعر العادي: {da(PIGMA_UNIT_PRICE)} للعلبة</p>
-        </div>
-        <div className="mt-7 grid gap-4 lg:grid-cols-2" role="radiogroup" aria-label="اختار العرض">
-          {PIGMA_OFFERS.map(o => {
-            const active = o.id === offerId;
-            const saving = o.boxes * PIGMA_UNIT_PRICE - o.price;
-            return (
-              <button key={o.id} data-offer={o.id} type="button" role="radio" aria-checked={active} onClick={() => selectOffer(o.id, 1)}
-                className={`pg-offer pg-reveal relative text-right rounded-[28px] p-5 border-2 transition-all hover:-translate-y-0.5 ${
-                  active ? 'border-[#1366d6] bg-white shadow-[0_24px_50px_-24px_rgba(19,102,214,.6)]' : 'border-slate-200 bg-white/70'}`}>
-                {o.badge && <span className="absolute -top-3 right-5 text-[12.5px] font-black text-[#0B1B3F] bg-[#FFD60A] rounded-full px-3 py-1 shadow">⭐ {o.badge}</span>}
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[20px] font-black text-[#0B1B3F]">{o.title}</p>
-                    <p className="text-[14px] font-bold text-slate-500">{o.boxes} علب × 1,4 كلغ</p>
-                  </div>
-                  <span className={`shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center ${active ? 'border-[#1366d6] bg-[#1366d6] text-white' : 'border-slate-300'}`}>
-                    {active && <Check size={16} strokeWidth={3} />}
-                  </span>
-                </div>
-                {/* boîtes payées / offertes */}
-                <div className="mt-3 flex gap-1.5" aria-hidden="true">
-                  {Array.from({ length: o.boxes }, (_, i) => (
-                    <span key={i} className={`h-9 flex-1 max-w-9 rounded-lg flex items-center justify-center text-[10px] font-black ${i < o.paid ? 'bg-[#0B1B3F] text-white' : 'bg-[#FFD60A] text-[#0B1B3F]'}`}>
-                      {i < o.paid ? '1,4' : 'مجانا'}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-4 flex items-end justify-between gap-2">
-                  <div>
-                    <p className="text-[30px] leading-none font-black text-[#0B1B3F]">{da(o.price)}</p>
-                    <p className="mt-1 text-[13px] font-bold text-slate-400 line-through">{da(o.boxes * PIGMA_UNIT_PRICE)}</p>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-[13px] font-bold text-slate-600">≈ {da(Math.round(o.price / o.boxes))} للعلبة</p>
-                    <p className="text-[13px] font-black text-emerald-600">توفّر {da(saving)}</p>
-                  </div>
-                </div>
-                <p className={`mt-3 rounded-xl px-3 py-2 text-[13.5px] font-black flex items-center gap-1.5 ${o.freeDelivery ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                  <Truck size={16} /> {o.freeDelivery ? 'التوصيل مجاني' : 'التوصيل حسب الولاية'}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-        <button type="button" onClick={toForm}
-          className="pg-shine pg-reveal relative overflow-hidden mt-5 w-full h-[58px] rounded-2xl bg-[#0B1B3F] text-white text-[18px] font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
-          <ShoppingCart size={20} /> كمّل الطلب – {offer.title}
-        </button>
-      </Section>
-
-      {/* FORMULAIRE */}
-      <section id="order" className="relative px-4 py-14 lg:py-20 scroll-mt-2 bg-gradient-to-b from-[#0B1B3F] to-[#0E2A5C]">
-        <Beads n={12} seed={11} />
+      {/* COMMANDE */}
+      <section id="order" className="relative px-4 py-12 lg:py-16 scroll-mt-2 bg-gradient-to-b from-[#0B1B3F] to-[#0E2A5C]">
+        <Beads n={10} seed={11} />
         <div className="relative max-w-xl mx-auto">
-          <CheckoutFormPigma offerId={offerId} onOfferChange={id => selectOffer(id, count)} count={count} onCountChange={n => setCount(n)}
-            sourceTag={SOURCE_TAG} onPurchase={onPurchase} onFirstInteraction={handleFirstInteraction} />
+          <CheckoutFormPigma offerId={offerId} onOfferChange={selectOffer} sourceTag={SOURCE_TAG} onPurchase={onPurchase} onFirstInteraction={handleFirstInteraction} />
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[12px] font-bold text-sky-100/85">
+            <span className="flex flex-col items-center gap-1"><Banknote size={20} className="text-[#FFD60A]" /> الدفع عند الاستلام</span>
+            <span className="flex flex-col items-center gap-1"><Truck size={20} className="text-[#FFD60A]" /> 24 حتى 48 ساعة</span>
+            <span className="flex flex-col items-center gap-1"><PhoneCall size={20} className="text-[#FFD60A]" /> نعيطولك نأكدو</span>
+          </div>
         </div>
       </section>
 
-      {/* RÉASSURANCE */}
-      <Section className="bg-white" wide>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            { Icon: Banknote, t: 'الدفع عند الاستلام', d: 'ما تخلص والو قبل' },
-            { Icon: Truck, t: 'التوصيل لـ 69 ولاية', d: 'في 24 حتى 48 ساعة' },
-            { Icon: PhoneCall, t: 'نعيطولك نأكدو', d: 'قبل ما نبعثو الطلب' },
-            { Icon: BadgeCheck, t: 'صور حقيقية للعلبة', d: 'Pigma Color · Stop Fuites' },
-          ].map(({ Icon, t, d }) => (
-            <div key={t} className="pg-reveal rounded-3xl bg-[#F3F7FB] p-4 text-center ring-1 ring-sky-100">
-              <Icon size={28} className="mx-auto text-[#1366d6]" /><p className="mt-2 font-black text-[15px] text-[#0B1B3F]">{t}</p><p className="text-[12.5px] font-semibold text-slate-500">{d}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-6 grid grid-cols-2 gap-3 pg-reveal">
-          {[PHOTO_SIZES, PHOTO_HAND].map(p => (
-            <figure key={p.src} className="rounded-3xl overflow-hidden ring-1 ring-slate-200 bg-slate-100">
-              <img src={p.src} alt={p.alt} width={p.w} height={p.h} loading="lazy" decoding="async" className="w-full h-64 lg:h-96 object-cover" />
-            </figure>
-          ))}
-        </div>
-        <p className="mt-2 text-center text-[12.5px] font-semibold text-slate-500">صور حقيقية للمنتج: علبة 1,4 كلغ (والسطل 5 كلغ للمقارنة)</p>
-      </Section>
-
       {/* FAQ */}
       <Section className="bg-[#F3F7FB]">
-        <div className="text-center mb-6 pg-reveal"><Kicker>عندك سؤال؟</Kicker><H2>الأسئلة اللي تتعاود</H2></div>
+        <div className="text-center mb-5"><H2>عندك سؤال؟</H2></div>
         <div className="space-y-2">
           {FAQ(deskMin, homeMin).map((item, i) => {
             const open = openFaq === i;
@@ -675,27 +468,13 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
         </div>
       </Section>
 
-      {/* CTA FINAL */}
-      <section className="relative px-4 py-14 bg-[#0B1B3F] text-white text-center overflow-hidden">
-        <AmbientFigure id="house-after-storm" alt="" className="absolute inset-0 opacity-40" />
-        <Beads n={14} seed={13} />
-        <div className="relative max-w-xl mx-auto">
-          <H2 dark>ما تستناش حتى تدخل القطرة</H2>
-          <p className="mt-2 text-[16px] font-semibold text-sky-100/85">احمي السطح قبل الشتا الجاية، بطبقة شفافة ما تبانش.</p>
-          <button type="button" onClick={toForm}
-            className="pg-shine relative overflow-hidden mt-6 w-full h-[60px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] text-[18.5px] font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
-            <ShoppingCart size={21} /> اطلب الآن – الدفع عند الاستلام
-          </button>
-        </div>
-      </section>
-
-      <footer className="px-4 pt-6 pb-28 text-center text-[11.5px] font-semibold text-slate-400 space-y-1">
-        <p>Pigma Color و Stop Fuites علامات تجارية لأصحابها. YANIS SHOP بائع للمنتج.</p>
-        <p>الصور المكتوب عليها «صورة توضيحية» مولّدة للتوضيح فقط وماهيش نتائج حقيقية ولا صور زبائن.</p>
+      <footer className="px-4 pt-4 pb-28 text-center text-[11.5px] font-semibold text-slate-400 space-y-1">
+        <p className="flex items-center justify-center gap-1"><ShieldCheck size={13} /> Pigma Color و Stop Fuites علامات تجارية لأصحابها. YANIS SHOP بائع للمنتج.</p>
+        <p>صورة الخلفية في الأعلى مولّدة للتوضيح فقط.</p>
       </footer>
 
       {/* WhatsApp flottant */}
-      <a href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent('السلام عليكم، عندي سؤال على Stop Fuites الشفاف')}`} target="_blank" rel="noopener noreferrer"
+      <a href={waLink('السلام عليكم، عندي سؤال على Stop Fuites الشفاف')} target="_blank" rel="noopener noreferrer"
         aria-label="تواصل معنا على واتساب"
         className={`pg-wa fixed left-4 z-50 w-14 h-14 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-xl transition-[bottom] duration-300 ${showSticky ? 'bottom-[92px]' : 'bottom-5'}`}>
         <MessageCircle size={28} fill="currentColor" />
@@ -706,7 +485,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
         <div className="max-w-xl mx-auto bg-[#0B1B3F]/95 backdrop-blur px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] lg:rounded-t-3xl">
           <button type="button" tabIndex={showSticky ? 0 : -1} onClick={toForm}
             className="pg-shine relative overflow-hidden w-full h-[54px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] text-[16.5px] font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
-            <ShoppingCart size={20} /> اطلب الآن – {offer.boxes * count} علب بـ {da(offer.price * count)}
+            <ShoppingCart size={20} /> اطلب الآن – {boxesLabel(offer.boxes)} بـ {da(offer.price)}
           </button>
         </div>
       </div>

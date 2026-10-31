@@ -22,7 +22,7 @@ sur la page avec un repère visible `[À COMPLÉTER : …]` (voir « Reste [À C
 | Caractéristiques (revendeur) | transparent, garde l'aspect naturel ; membrane plastique souple qui suit les mouvements du support ; sans démolition | Même fiche, « الميزات الرئيسية » (le slogan « عازل 100% » n'est pas repris) |
 | Prix chez ce revendeur (pour info) | 1 400 DA (barré 1 900 DA) | Même fiche (données produit YouCan) |
 | Fabricant | Pigma Color SARL, zone industrielle de Sidi Khaled, Oued El Berdi, Bouira | https://pagesjaunes-dz.com/Companies/detail/1b07bed355f31636bb7f62da43287cca/pigma-color · https://elmouchir.caci.dz/entreprise/24967/pigma-color · https://dz.kompass.com/c/pigma-color-sarl/dz274247/ |
-| Prix / offres | 1 900 DA la boîte ; 2+1 = 3 800 DA ; 4+2 = 7 600 DA livraison gratuite | Fixés par la boutique (brief) |
+| Prix / offres | 1 boîte = 1 900 DA ; 2+1 = 3 800 DA ; 4+2 = 7 600 DA livraison gratuite. La calculatrice propose aussi 4+2 + 1 boîte (7 boîtes, 9 500 DA) et 4+2 + 2+1 (9 boîtes, 11 400 DA), livraison gratuite | Fixés par la boutique |
 | Frais de livraison, wilayas | Table `DELIVERY_PRICES` / `WILAYAS` existante | `src/data.ts` (déjà utilisée par les autres pages) |
 
 ### Informations écartées (ne concernent pas ce produit)
@@ -39,7 +39,7 @@ Transmises par le propriétaire de la boutique, avec ses références. **Les PDF
 
 | Information | Valeur retenue sur la page | Source indiquée |
 |---|---|---|
-| Rendement | **0,3 à 0,5 kg/m² par couche** (rendement pratique constaté en magasin) ; la calculatrice compte 0,5 kg × 2 couches | Boutique (correction du 0,8–1 kg/m² d'abord cité) |
+| Rendement | **1 kg couvre 4 m² en deux couches**, soit ≈ 5,6 m² par boîte de 1,4 kg ; calculatrice limitée à 9 boîtes, au-delà tarif personnalisé (WhatsApp) | Boutique, 31/10/2026 (remplace le 0,3–0,5 kg/m² par couche cité avant) |
 | Préparation | support sec à 100 % (sinon le produit blanchit et cloque) ; brosser, dépoussiérer, dégraisser par lessivage, pas d'acide fort ; joints propres et sains | Boutique |
 | Outils | brosse pour faire pénétrer dans les joints ; rouleau laqueur / poil court pour les surfaces planes | Boutique |
 | Étapes | 1) couche de préparation diluée à 10–20 % d'eau, 6 h de séchage ; 2) 1re couche pure, 24 h ; 3) 2e couche pure croisée | Boutique ; fiche Pigma `WOtCEPDyrHWz4ww3LXJc78han0KIRAOt691qOm1I.pdf` |

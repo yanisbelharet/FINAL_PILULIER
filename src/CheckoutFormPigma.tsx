@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Phone, MapPin, ChevronDown, Minus, Plus, Lock, Truck, Building2, AlertCircle, Check, Gift, PhoneCall } from 'lucide-react';
+import { User, Phone, MapPin, ChevronDown, Lock, Truck, Building2, AlertCircle, Check, PhoneCall, Calculator } from 'lucide-react';
 import { WILAYAS, DELIVERY_PRICES } from './data';
 import { normalizePhone, isValidAlgerianMobile, getOrderSource } from './CheckoutFormLP';
 
@@ -8,25 +8,60 @@ export const PIGMA_PRODUCT = { id: 'pigma-stop-fuites-transparent', name: 'Pigma
 export const PIGMA_UNIT_PRICE = 1900;
 export const PIGMA_BOX_KG = 1.4;
 
-export const PIGMA_OFFERS = [
+export type PigmaOffer = { id: string; title: string; boxes: number; paid: number; price: number; freeDelivery: boolean; badge: string };
+
+// Les 3 offres affichées
+export const PIGMA_OFFERS: PigmaOffer[] = [
+  { id: 'pack1', title: 'علبة واحدة', boxes: 1, paid: 1, price: 1900, freeDelivery: false, badge: '' },
   { id: 'pack3', title: '2 علب + 1 مجانية', boxes: 3, paid: 2, price: 3800, freeDelivery: false, badge: '' },
   { id: 'pack6', title: '4 علب + 2 مجانيات', boxes: 6, paid: 4, price: 7600, freeDelivery: true, badge: 'الأكثر توفيرا' },
-] as const;
-export type PigmaOfferId = typeof PIGMA_OFFERS[number]['id'];
-export const getOffer = (id: PigmaOfferId) => PIGMA_OFFERS.find(o => o.id === id) || PIGMA_OFFERS[0];
+];
+// Combinaisons proposées uniquement par la calculatrice (7 à 9 boîtes) : elles contiennent l'offre 4+2, donc livraison gratuite
+export const PIGMA_COMBOS: PigmaOffer[] = [
+  { id: 'combo7', title: '4 علب + 2 مجانيات + علبة', boxes: 7, paid: 5, price: 9500, freeDelivery: true, badge: '' },
+  { id: 'combo9', title: '4 علب + 2 مجانيات + 2 علب + 1 مجانية', boxes: 9, paid: 6, price: 11400, freeDelivery: true, badge: '' },
+];
+export const getOffer = (id: string) => [...PIGMA_OFFERS, ...PIGMA_COMBOS].find(o => o.id === id) || PIGMA_OFFERS[2];
 
 // Isolé en LTR (U+2066…U+2069), sinon « 3 800 » s'affiche « 800 3 » dans une page RTL
 const fmt = (n: number) => `⁦${n.toLocaleString('fr-DZ').replace(/ | /g, ' ')}⁩`;
 export const da = (n: number) => `${fmt(n)} د.ج`;
+export const boxesLabel = (n: number) => (n === 1 ? 'علبة وحدة' : n === 2 ? 'جوج علب' : `${n} علب`);
+
+const OfferCard = ({ o, active, onSelect, note }: { o: PigmaOffer; active: boolean; onSelect: (id: string) => void; note?: string }) => {
+  const full = o.boxes * PIGMA_UNIT_PRICE;
+  return (
+    <button type="button" role="radio" aria-checked={active} onClick={() => onSelect(o.id)} data-offer={o.id}
+      className={`pg-offer relative w-full rounded-2xl border-2 p-3 flex items-center gap-3 text-right transition-all ${
+        active ? 'border-[#1366d6] bg-sky-50 shadow-sm' : 'border-slate-200 bg-white'}`}>
+      {(o.badge || note) && (
+        <span className="absolute -top-2.5 left-3 text-[11px] font-black text-[#0B1B3F] bg-[#FFD60A] rounded-full px-2.5 py-0.5 shadow flex items-center gap-1">
+          {note && <Calculator size={11} />}{o.badge || note}
+        </span>
+      )}
+      <span className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${active ? 'border-[#1366d6] bg-[#1366d6] text-white' : 'border-slate-300'}`}>
+        {active && <Check size={14} strokeWidth={3} />}
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-[16px] font-black text-[#0B1B3F] leading-snug">{o.title}</span>
+        <span className="block text-[12.5px] font-semibold text-slate-500">
+          {o.boxes === 1 ? '1,4 كلغ' : `${o.boxes} علب`} · {o.freeDelivery ? <b className="text-emerald-600">توصيل مجاني</b> : '+ التوصيل'}
+        </span>
+      </span>
+      <span className="text-left shrink-0">
+        <span className="block text-[17px] font-black text-[#0B1B3F]">{da(o.price)}</span>
+        {full > o.price && <span className="block text-[11.5px] font-bold text-slate-400 line-through">{da(full)}</span>}
+      </span>
+    </button>
+  );
+};
 
 type Field = 'name' | 'phone' | 'wilaya' | 'commune' | 'address';
 type Errors = Partial<Record<Field, string>>;
 
-const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourceTag, onPurchase, onFirstInteraction }: {
-  offerId: PigmaOfferId;
-  onOfferChange: (id: PigmaOfferId) => void;
-  count: number;
-  onCountChange: (n: number) => void;
+const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFirstInteraction }: {
+  offerId: string;
+  onOfferChange: (id: string) => void;
   sourceTag: string;
   onPurchase: (p: number, product: any, formData: any) => void;
   onFirstInteraction?: () => void;
@@ -55,12 +90,10 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
   }, [done]);
 
   const offer = getOffer(offerId);
-  const boxes = offer.boxes * count;
-  const subtotal = offer.price * count;
-  const normalTotal = boxes * PIGMA_UNIT_PRICE;
+  const combo = PIGMA_COMBOS.find(c => c.id === offerId);
   const wilayaPrice = formData.wilaya ? DELIVERY_PRICES[formData.wilaya] : null;
   const deliveryPrice = offer.freeDelivery ? 0 : (wilayaPrice ? wilayaPrice[formData.deliveryType] : 0);
-  const totalPrice = subtotal + deliveryPrice;
+  const totalPrice = offer.price + deliveryPrice;
 
   const update = (patch: Partial<typeof formData>) => {
     setFormData(prev => ({ ...prev, ...patch }));
@@ -99,8 +132,7 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
 
     const phone = normalizePhone(formData.phone);
     const eventId = `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    const offerLabel = `${offer.title}${count > 1 ? ` × ${count}` : ''}`;
-    const productName = `${PIGMA_PRODUCT.name} - ${offerLabel} = ${boxes} علب`;
+    const productName = `${PIGMA_PRODUCT.name} - ${offer.title} = ${offer.boxes} علب`;
 
     try {
       const response = await fetch('/api/submitOrder', {
@@ -111,14 +143,14 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
           name: formData.name.trim(),
           address: formData.address.trim(),
           phone,
-          quantity: boxes,
+          quantity: offer.boxes,
           price: totalPrice,
           // valeur nette (sans livraison) utilisée pour les pixels / CAPI
-          productTotal: subtotal,
+          productTotal: offer.price,
           currency: 'DZD',
           country: 'Algeria',
           bundleId: offer.id,
-          bundleTitle: offerLabel,
+          bundleTitle: offer.title,
           productId: PIGMA_PRODUCT.id,
           productName,
           eventId,
@@ -128,8 +160,8 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
 
       if (response.ok) {
         // Pixels : valeur nette des produits (DZD), sans la livraison
-        onPurchase(subtotal, { ...PIGMA_PRODUCT, price: subtotal, currency: 'DZD' }, { ...formData, phone, eventId, quantity: boxes });
-        setDone({ name: formData.name.trim(), phone, label: `${boxes} علب Stop Fuites (${offerLabel})`, total: totalPrice });
+        onPurchase(offer.price, { ...PIGMA_PRODUCT, price: offer.price, currency: 'DZD' }, { ...formData, phone, eventId, quantity: offer.boxes });
+        setDone({ name: formData.name.trim(), phone, label: `${boxesLabel(offer.boxes)} Stop Fuites (${offer.title})`, total: totalPrice });
       } else {
         const data = await response.json().catch(() => null);
         isSubmittingRef.current = false;
@@ -176,44 +208,19 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
   return (
     <form onSubmit={handleSubmit} onFocusCapture={onFirstInteraction} noValidate
       className="bg-white rounded-[28px] p-4 sm:p-6 shadow-[0_30px_80px_-30px_rgba(6,24,58,.55)] ring-1 ring-sky-100">
-      <div className="text-center mb-4">
-        <h2 className="text-[22px] font-black text-[#0B1B3F]">اطلب Stop Fuites الشفاف</h2>
-        <p className="text-[14px] font-semibold text-slate-500 mt-1">الدفع عند الاستلام · نعيطولك باش نأكدو</p>
-      </div>
+      <h2 className="text-center text-[22px] font-black text-[#0B1B3F] mb-4">اطلب دركا – الدفع عند الاستلام</h2>
 
       {/* Choix de l'offre */}
-      <div className="space-y-2.5 mb-4" role="radiogroup" aria-label="اختار العرض">
-        {PIGMA_OFFERS.map(o => {
-          const active = o.id === offerId;
-          return (
-            <button key={o.id} type="button" role="radio" aria-checked={active} onClick={() => onOfferChange(o.id)}
-              className={`pg-offer relative w-full rounded-2xl border-2 p-3 flex items-center gap-3 text-right transition-all ${
-                active ? 'border-[#1366d6] bg-sky-50 shadow-sm' : 'border-slate-200 bg-white'
-              }`}>
-              {o.badge && <span className="absolute -top-2.5 left-3 text-[11px] font-black text-[#0B1B3F] bg-[#FFD60A] rounded-full px-2.5 py-0.5 shadow">{o.badge}</span>}
-              <span className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${active ? 'border-[#1366d6] bg-[#1366d6] text-white' : 'border-slate-300'}`}>
-                {active && <Check size={14} strokeWidth={3} />}
-              </span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[16px] font-black text-[#0B1B3F]">{o.title}</span>
-                <span className="block text-[12.5px] font-semibold text-slate-500">
-                  {o.boxes} علب · {da(Math.round(o.price / o.boxes))} للعلبة · {o.freeDelivery ? <b className="text-emerald-600">توصيل مجاني</b> : '+ التوصيل'}
-                </span>
-              </span>
-              <span className="text-left shrink-0">
-                <span className="block text-[17px] font-black text-[#0B1B3F]">{da(o.price)}</span>
-                <span className="block text-[11.5px] font-bold text-slate-400 line-through">{da(o.boxes * PIGMA_UNIT_PRICE)}</span>
-              </span>
-            </button>
-          );
-        })}
+      <div className="space-y-3 mb-4" role="radiogroup" aria-label="اختار العرض">
+        {combo && <OfferCard o={combo} active onSelect={onOfferChange} note="اقتراح الحاسبة" />}
+        {PIGMA_OFFERS.map(o => <React.Fragment key={o.id}><OfferCard o={o} active={o.id === offerId} onSelect={onOfferChange} /></React.Fragment>)}
       </div>
 
       <div className="space-y-3">
         <div>
-          <label htmlFor="pg-name" className="block text-[13px] font-bold text-slate-600 mb-1">الاسم واللقب</label>
+          <label htmlFor="pg-name" className="sr-only">الاسم واللقب</label>
           <div className="relative">
-            <input id="pg-name" type="text" autoComplete="name" placeholder="مثال: محمد بن علي" aria-invalid={!!errors.name}
+            <input id="pg-name" type="text" autoComplete="name" placeholder="الاسم واللقب" aria-invalid={!!errors.name}
               className={`${fieldClass(errors.name)} pr-11 pl-3`} value={formData.name} onChange={e => update({ name: e.target.value })} />
             <User className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
           </div>
@@ -221,10 +228,10 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
         </div>
 
         <div>
-          <label htmlFor="pg-phone" className="block text-[13px] font-bold text-slate-600 mb-1">رقم الهاتف</label>
+          <label htmlFor="pg-phone" className="sr-only">رقم الهاتف</label>
           <div className="relative">
             <input id="pg-phone" type="tel" inputMode="tel" autoComplete="tel" dir={formData.phone ? 'ltr' : 'rtl'}
-              placeholder="05 / 06 / 07 XX XX XX XX" aria-invalid={!!errors.phone}
+              placeholder="رقم الهاتف (05 / 06 / 07)" aria-invalid={!!errors.phone}
               className={`${fieldClass(errors.phone)} pr-11 pl-3 text-right`} value={formData.phone} onChange={e => update({ phone: e.target.value })} />
             <Phone className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
           </div>
@@ -233,12 +240,12 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="pg-wilaya" className="block text-[13px] font-bold text-slate-600 mb-1">الولاية</label>
+            <label htmlFor="pg-wilaya" className="sr-only">الولاية</label>
             <div className="relative">
               <select id="pg-wilaya" aria-invalid={!!errors.wilaya} value={formData.wilaya}
                 className={`${fieldClass(errors.wilaya)} pr-3 pl-9 appearance-none ${formData.wilaya ? '' : 'text-slate-400'}`}
                 onChange={e => update({ wilaya: e.target.value, commune: '' })}>
-                <option value="" disabled>اختار</option>
+                <option value="" disabled>الولاية</option>
                 {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
               </select>
               <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
@@ -246,12 +253,12 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
             <ErrorText msg={errors.wilaya} />
           </div>
           <div>
-            <label htmlFor="pg-commune" className="block text-[13px] font-bold text-slate-600 mb-1">البلدية</label>
+            <label htmlFor="pg-commune" className="sr-only">البلدية</label>
             <div className="relative">
               <select id="pg-commune" aria-invalid={!!errors.commune} value={formData.commune} disabled={!formData.wilaya}
                 className={`${fieldClass(errors.commune)} pr-3 pl-9 appearance-none disabled:bg-slate-50 ${formData.commune ? '' : 'text-slate-400'}`}
                 onChange={e => update({ commune: e.target.value })}>
-                <option value="" disabled>اختار</option>
+                <option value="" disabled>البلدية</option>
                 {communeList.map(c => <option key={c.id} value={c.name_ar}>{c.name_ar}</option>)}
               </select>
               <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
@@ -259,66 +266,40 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
             <ErrorText msg={errors.commune} />
           </div>
         </div>
-        <p className="-mt-1 text-[12px] font-semibold text-slate-400">الولايات الجديدة: اختار الولاية الأم والبلدية تاعك.</p>
 
-        <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="طريقة التوصيل">
+        <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-100" role="radiogroup" aria-label="طريقة التوصيل">
           {([{ value: 'home', label: 'للدار', Icon: Truck }, { value: 'desk', label: 'للمكتب', Icon: Building2 }] as const).map(({ value, label, Icon }) => {
             const active = formData.deliveryType === value;
-            const price = offer.freeDelivery ? 'مجاني' : wilayaPrice ? da(wilayaPrice[value]) : 'حسب الولاية';
+            const price = offer.freeDelivery ? 'مجاني' : wilayaPrice ? da(wilayaPrice[value]) : '';
             return (
               <button key={value} type="button" role="radio" aria-checked={active} onClick={() => update({ deliveryType: value })}
-                className={`h-14 rounded-2xl border-2 flex flex-col items-center justify-center leading-tight transition-colors ${
-                  active ? 'border-[#1366d6] bg-sky-50 text-sky-900' : 'border-slate-200 bg-white text-slate-600'}`}>
-                <span className="flex items-center gap-1.5 text-[14px] font-bold"><Icon size={16} /> {label}</span>
-                <span className={`text-[12px] font-bold ${offer.freeDelivery ? 'text-emerald-600' : 'opacity-80'}`}>{price}</span>
+                className={`h-11 rounded-xl flex items-center justify-center gap-1.5 text-[14px] font-bold transition-colors ${
+                  active ? 'bg-white text-[#0B1B3F] shadow-sm' : 'text-slate-500'}`}>
+                <Icon size={16} /> {label}
+                {price && <span className={`text-[12px] ${offer.freeDelivery ? 'text-emerald-600' : 'text-slate-400'}`}>({price})</span>}
               </button>
             );
           })}
         </div>
 
         <div>
-          <label htmlFor="pg-address" className="block text-[13px] font-bold text-slate-600 mb-1">
-            العنوان {formData.deliveryType === 'desk' && <span className="font-semibold text-slate-400">(اختياري للمكتب)</span>}
-          </label>
+          <label htmlFor="pg-address" className="sr-only">العنوان</label>
           <div className="relative">
-            <input id="pg-address" type="text" autoComplete="street-address" placeholder="الحي، الشارع، رقم الدار…" aria-invalid={!!errors.address}
+            <input id="pg-address" type="text" autoComplete="street-address" aria-invalid={!!errors.address}
+              placeholder={formData.deliveryType === 'desk' ? 'العنوان (اختياري)' : 'العنوان (الحي، الشارع…)'}
               className={`${fieldClass(errors.address)} pr-11 pl-3`} value={formData.address} onChange={e => update({ address: e.target.value })} />
             <MapPin className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
           </div>
           <ErrorText msg={errors.address} />
         </div>
 
-        <div className="flex items-center justify-between bg-slate-50 rounded-2xl px-3 h-14">
-          <span className="text-[14px] font-bold text-slate-700">عدد العروض</span>
-          <div className="flex items-center gap-3">
-            <button type="button" aria-label="نقّص" onClick={() => onCountChange(Math.max(1, count - 1))}
-              className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 text-slate-700 flex items-center justify-center active:scale-90 transition-transform"><Minus size={18} /></button>
-            <span className="text-xl font-black text-slate-900 w-6 text-center" aria-live="polite">{count}</span>
-            <button type="button" aria-label="زيد" onClick={() => onCountChange(Math.min(50, count + 1))}
-              className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 text-slate-700 flex items-center justify-center active:scale-90 transition-transform"><Plus size={18} /></button>
-          </div>
-        </div>
-
         {/* Récapitulatif */}
-        <div className="rounded-2xl border border-slate-200 divide-y divide-slate-100 text-[14px]" aria-live="polite">
-          <div className="flex justify-between gap-3 px-4 py-2.5">
-            <span className="text-slate-500 font-semibold">Stop Fuites شفاف × {boxes} علب ({fmt(+(boxes * PIGMA_BOX_KG).toFixed(1))} كلغ)</span>
-            <span className="font-bold text-slate-800 shrink-0">{da(subtotal)}</span>
-          </div>
-          <div className="flex justify-between gap-3 px-4 py-2.5">
-            <span className="text-emerald-700 font-semibold flex items-center gap-1"><Gift size={15} /> وفّرت</span>
-            <span className="font-bold text-emerald-700 shrink-0">{da(normalTotal - subtotal)}</span>
-          </div>
-          <div className="flex justify-between gap-3 px-4 py-2.5">
-            <span className="text-slate-500 font-semibold">التوصيل</span>
-            <span className="font-bold text-slate-800 shrink-0">
-              {offer.freeDelivery ? <span className="text-emerald-600">مجاني</span> : wilayaPrice ? da(deliveryPrice) : 'اختار الولاية'}
-            </span>
-          </div>
-          <div className="flex justify-between items-center px-4 py-3 bg-sky-50 rounded-b-2xl">
-            <span className="font-black text-slate-900">المجموع</span>
-            <span className="text-[24px] font-black text-[#0B4FB3]">{da(totalPrice)}</span>
-          </div>
+        <div className="flex items-center justify-between rounded-2xl bg-sky-50 px-4 py-3" aria-live="polite">
+          <span className="text-[13px] font-semibold text-slate-500 leading-tight">
+            المجموع<br />
+            {offer.freeDelivery ? <b className="text-emerald-600">التوصيل مجاني</b> : wilayaPrice ? `منها التوصيل ${da(deliveryPrice)}` : '+ التوصيل حسب الولاية'}
+          </span>
+          <span className="text-[26px] font-black text-[#0B4FB3]">{da(totalPrice)}</span>
         </div>
 
         {submitError && (
@@ -329,10 +310,10 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, count, onCountChange, sourc
 
         <button type="submit" disabled={loading}
           className="pg-shine relative overflow-hidden w-full h-[58px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] text-[18px] font-black shadow-lg shadow-yellow-500/30 active:scale-[0.98] transition-transform disabled:opacity-70">
-          {loading ? 'راهو يتبعث…' : 'اطلب الآن – الدفع عند الاستلام'}
+          {loading ? 'راهو يتبعث…' : 'أكّد الطلب'}
         </button>
         <p className="text-center text-[13px] font-semibold text-slate-500 flex items-center justify-center gap-1.5">
-          <Lock size={14} /> ما تخلص والو دركا · تخلص كي تستلم
+          <Lock size={14} /> ما تخلص والو دركا · نعيطولك باش نأكدو
         </p>
       </div>
     </form>

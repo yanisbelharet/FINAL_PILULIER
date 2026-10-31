@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Phone, MapPin, ChevronDown, Lock, Truck, Building2, AlertCircle, Check, PhoneCall, Calculator } from 'lucide-react';
+import { User, Phone, ChevronDown, Lock, Truck, Building2, AlertCircle, Check, PhoneCall, Calculator } from 'lucide-react';
 import { WILAYAS, DELIVERY_PRICES } from './data';
 import { normalizePhone, isValidAlgerianMobile, getOrderSource } from './CheckoutFormLP';
 
@@ -56,7 +56,7 @@ const OfferCard = ({ o, active, onSelect, note }: { o: PigmaOffer; active: boole
   );
 };
 
-type Field = 'name' | 'phone' | 'wilaya' | 'commune' | 'address';
+type Field = 'name' | 'phone' | 'wilaya' | 'commune';
 type Errors = Partial<Record<Field, string>>;
 
 const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFirstInteraction }: {
@@ -68,7 +68,7 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
 }) => {
   const isSubmittingRef = useRef(false);
   const doneRef = useRef<HTMLDivElement>(null);
-  const [formData, setFormData] = useState({ name: '', phone: '', wilaya: '', commune: '', address: '', deliveryType: 'home' as 'home' | 'desk' });
+  const [formData, setFormData] = useState({ name: '', phone: '', wilaya: '', commune: '', deliveryType: 'home' as 'home' | 'desk' });
   const [errors, setErrors] = useState<Errors>({});
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -111,7 +111,6 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
     else if (!isValidAlgerianMobile(phone)) e.phone = 'الرقم لازم يبدا بـ 05 ولا 06 ولا 07 ومن بعد 8 أرقام';
     if (!formData.wilaya) e.wilaya = 'اختار الولاية';
     if (!formData.commune) e.commune = 'اختار البلدية';
-    if (formData.deliveryType === 'home' && formData.address.trim().length < 3) e.address = 'اكتب العنوان باش يوصلك الطلب';
     return e;
   };
 
@@ -121,7 +120,7 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
     const found = validate();
     setErrors(found);
     if (Object.keys(found).length > 0) {
-      const first = (['name', 'phone', 'wilaya', 'commune', 'address'] as const).find(k => found[k]);
+      const first = (['name', 'phone', 'wilaya', 'commune'] as const).find(k => found[k]);
       document.getElementById(`pg-${first}`)?.focus();
       return;
     }
@@ -141,7 +140,6 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
         body: JSON.stringify({
           ...formData,
           name: formData.name.trim(),
-          address: formData.address.trim(),
           phone,
           quantity: offer.boxes,
           price: totalPrice,
@@ -280,17 +278,6 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
               </button>
             );
           })}
-        </div>
-
-        <div>
-          <label htmlFor="pg-address" className="sr-only">العنوان</label>
-          <div className="relative">
-            <input id="pg-address" type="text" autoComplete="street-address" aria-invalid={!!errors.address}
-              placeholder={formData.deliveryType === 'desk' ? 'العنوان (اختياري)' : 'العنوان (الحي، الشارع…)'}
-              className={`${fieldClass(errors.address)} pr-11 pl-3`} value={formData.address} onChange={e => update({ address: e.target.value })} />
-            <MapPin className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
-          </div>
-          <ErrorText msg={errors.address} />
         </div>
 
         {/* Récapitulatif */}

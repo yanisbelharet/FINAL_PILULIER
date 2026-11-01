@@ -3,6 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- TikTok Pixel Code (code de base officiel) : chargé dès le <head> pour que PageView parte sans attendre React.
+         Pas sur les pages internes /admin et /app. -->
+    <script>
+      if (!/^\/(admin|app)(\/|$)/.test(location.pathname)) {
+        !function (w, d, t) {
+          w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
+          var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
+          ;n.type="text/javascript",n.async=!0,n.fetchPriority="high",n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+
+          ttq.load('DBJA2NRC77U3VQV6KJT0');
+          ttq.load('D2RO1VRC77U9PGFLCGLG');
+          ttq.page();
+        }(window, document, 'ttq');
+      }
+    </script>
+    <!-- End TikTok Pixel Code -->
     <meta name="facebook-domain-verification" content="bzeqe49h9d1f6ejn1qy53t2zht6pmy" />
     <meta name="description" content="منبه وحافظة الدواء الذكية 4 أوقات - تخلص من القلق ونظم أدويتك بكل سهولة! متوفر مع شحن وتوصيل سريع والدفع عند الاستلام." />
     <title>منبه الدواء الذكي - اطلب الآن</title>

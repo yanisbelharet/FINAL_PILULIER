@@ -197,36 +197,7 @@ export default function App() {
       window.fbq('track', 'PageView');
     }
 
-    if (config.tiktokPixelId && !window.ttq) {
-      const t = 'ttq';
-      window.TiktokAnalyticsObject = t;
-      const ttq = window[t] = window[t] || [];
-      ttq.methods = ["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
-      ttq.setAndDefer = function(t: any, e: any) {
-        t[e] = function() {
-          t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
-        };
-      };
-      for (let i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
-      ttq.instance = function(t: any) {
-        const e = ttq._i[t] || [];
-        for (let n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]);
-        return e;
-      };
-      ttq.load = function(e: any, n: any) {
-        const i = "https://analytics.tiktok.com/i18n/pixel/events.js";
-        ttq._i = ttq._i || {};
-        ttq._i[e] = [];
-        ttq._i[e]._u = i;
-        ttq._t = ttq._t || {};
-        ttq._t[e] = +new Date;
-        ttq._o = ttq._o || {};
-        ttq._o[e] = n || {};
-      };
-      const ttPixels = config.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
-      ttPixels.forEach((p: string) => ttq.load(p));
-      ttq.page();
-    }
+    // TikTok : le pixel est chargé par le code de base officiel dans le <head> de index.html
 
     if ((config.googleAdsId || config.ga4MeasurementId) && !window.dataLayer) {
       window.dataLayer = window.dataLayer || [];
@@ -256,17 +227,6 @@ export default function App() {
         script.id = 'google-gtag-script';
         script.async = true;
         script.src = `https://www.googletagmanager.com/gtag/js?id=${gtagId}`;
-        document.head.appendChild(script);
-      }
-
-      // 3. TikTok Pixel external script
-      if (config.tiktokPixelId && !document.getElementById('tiktok-pixel-script')) {
-        const ttPixels = config.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
-        const primaryPixel = ttPixels[0] || '';
-        const script = document.createElement('script');
-        script.id = 'tiktok-pixel-script';
-        script.async = true;
-        script.src = `https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${primaryPixel}&lib=ttq`;
         document.head.appendChild(script);
       }
     };
@@ -365,7 +325,8 @@ export default function App() {
     if (config?.fbPixelId && window.fbq) {
       window.fbq('track', 'Purchase', { value: usdValue, currency: 'USD' }, { eventID: eventId });
     }
-    if (config?.tiktokPixelId && window.ttq) {
+    // window.ttq est défini par le code de base TikTok du <head> (indépendant de /api/config)
+    if (window.ttq) {
       if (formattedPhone) {
         window.ttq.identify({
           phone_number: formattedPhone

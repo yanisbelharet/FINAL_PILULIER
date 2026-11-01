@@ -6,6 +6,7 @@ import crypto from "crypto";
 
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, increment, where, Timestamp } from "firebase/firestore";
+import { isAdminRequest, publicConfig } from "./api/_configAccess";
 
 console.log("[SERVER] server.ts loaded");
 
@@ -129,7 +130,12 @@ app.use(cookieParser());
   // API routes FIRST
   app.get("/api/config", async (req, res) => {
     const config = await getConfig();
-    res.json(config);
+    // Le dashboard (admin connecté) reçoit tout ; le public ne reçoit pas les tokens/secrets
+    if (isAdminRequest(req)) {
+      res.setHeader('Cache-Control', 'private, no-store');
+      return res.json(config);
+    }
+    res.json(publicConfig(config));
   });
 
   // Blocked IPs Management (0ms in-memory cache + persistent storage)

@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import jwt from "jsonwebtoken";
+import { isAdminRequest, publicConfig } from "./_configAccess";
 
 const firebaseConfig = {
   projectId: "gen-lang-client-0983661862",
@@ -26,7 +27,13 @@ export default async function handler(req, res) {
       const docRef = doc(db, "config", "main");
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        return res.status(200).json({ ...defaultConfig, ...docSnap.data() });
+        const config = { ...defaultConfig, ...docSnap.data() };
+        // Le dashboard (admin connecté) reçoit tout ; le public ne reçoit pas les tokens/secrets
+        if (isAdminRequest(req)) {
+          res.setHeader('Cache-Control', 'private, no-store');
+          return res.status(200).json(config);
+        }
+        return res.status(200).json(publicConfig(config));
       }
     } catch (error) {
       console.error("Error reading config:", error);

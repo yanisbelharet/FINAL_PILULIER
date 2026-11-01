@@ -14,13 +14,12 @@ export type PigmaOffer = { id: string; title: string; boxes: number; paid: numbe
 export const PIGMA_OFFERS: PigmaOffer[] = [
   { id: 'pack1', title: 'علبة واحدة', boxes: 1, paid: 1, price: 1900, freeDelivery: false, badge: '' },
   { id: 'pack3', title: '2 علب + 1 مجانية', boxes: 3, paid: 2, price: 3800, freeDelivery: false, badge: '' },
-  { id: 'pack7', title: '4 علب + 3 مجانيات', boxes: 7, paid: 4, price: 7600, freeDelivery: false, badge: 'الأكثر توفيرا' },
+  { id: 'pack6', title: '4 علب + 2 مجانيات', boxes: 6, paid: 4, price: 7600, freeDelivery: true, badge: 'الأكثر توفيرا' },
 ];
-// Combinaisons proposées uniquement par la calculatrice (besoins de 4, 8 et 9 boîtes), livraison selon la wilaya
+// Combinaisons proposées uniquement par la calculatrice (7 à 9 boîtes) : elles contiennent l'offre 4+2, donc livraison gratuite
 export const PIGMA_COMBOS: PigmaOffer[] = [
-  { id: 'combo4', title: '2 علب + 1 مجانية + علبة', boxes: 4, paid: 3, price: 5700, freeDelivery: false, badge: '' },
-  { id: 'combo8', title: '4 علب + 3 مجانيات + علبة', boxes: 8, paid: 5, price: 9500, freeDelivery: false, badge: '' },
-  { id: 'combo10', title: '4 علب + 3 مجانيات + 2 علب + 1 مجانية', boxes: 10, paid: 6, price: 11400, freeDelivery: false, badge: '' },
+  { id: 'combo7', title: '4 علب + 2 مجانيات + علبة', boxes: 7, paid: 5, price: 9500, freeDelivery: true, badge: '' },
+  { id: 'combo9', title: '4 علب + 2 مجانيات + 2 علب + 1 مجانية', boxes: 9, paid: 6, price: 11400, freeDelivery: true, badge: '' },
 ];
 // Offre par défaut : 2 achetées + 1 offerte
 export const PIGMA_DEFAULT_OFFER = 'pack3';

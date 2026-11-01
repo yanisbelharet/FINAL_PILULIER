@@ -22,7 +22,7 @@ sur la page avec un repère visible `[À COMPLÉTER : …]` (voir « Reste [À C
 | Caractéristiques (revendeur) | transparent, garde l'aspect naturel ; membrane plastique souple qui suit les mouvements du support ; sans démolition | Même fiche, « الميزات الرئيسية » (le slogan « عازل 100% » n'est pas repris) |
 | Prix chez ce revendeur (pour info) | 1 400 DA (barré 1 900 DA) | Même fiche (données produit YouCan) |
 | Fabricant | Pigma Color SARL, zone industrielle de Sidi Khaled, Oued El Berdi, Bouira | https://pagesjaunes-dz.com/Companies/detail/1b07bed355f31636bb7f62da43287cca/pigma-color · https://elmouchir.caci.dz/entreprise/24967/pigma-color · https://dz.kompass.com/c/pigma-color-sarl/dz274247/ |
-| Prix / offres | 1 boîte = 1 900 DA ; 2+1 = 3 800 DA (offre par défaut) ; 4+3 = 7 600 DA (7 boîtes). Livraison selon la wilaya pour toutes les offres. La calculatrice propose aussi 2+1 + 1 boîte (4 boîtes, 5 700 DA), 4+3 + 1 boîte (8 boîtes, 9 500 DA) et 4+3 + 2+1 (10 boîtes, 11 400 DA) | Fixés par la boutique, 01/11/2026 |
+| Prix / offres | 1 boîte = 1 900 DA ; 2+1 = 3 800 DA (offre par défaut) ; 4+2 = 7 600 DA livraison gratuite. La calculatrice propose aussi 4+2 + 1 boîte (7 boîtes, 9 500 DA) et 4+2 + 2+1 (9 boîtes, 11 400 DA), livraison gratuite | Fixés par la boutique, 01/11/2026 |
 | Frais de livraison, wilayas | Table `DELIVERY_PRICES` / `WILAYAS` existante | `src/data.ts` (déjà utilisée par les autres pages) |
 
 ### Informations écartées (ne concernent pas ce produit)

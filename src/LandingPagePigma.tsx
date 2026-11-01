@@ -23,8 +23,7 @@ const M2_PER_KG = 4;
 const M2_PER_BOX = PIGMA_BOX_KG * M2_PER_KG;
 // Au-delà, la boutique fait un tarif personnalisé
 const CALC_MAX_BOXES = 9;
-// Offre la moins chère pour n boîtes (à prix égal, celle qui donne le plus de boîtes)
-const offerForBoxes = (n: number) => (n <= 1 ? 'pack1' : n <= 3 ? 'pack3' : n === 4 ? 'combo4' : n <= 7 ? 'pack7' : n === 8 ? 'combo8' : 'combo10');
+const offerForBoxes = (n: number) => (n <= 1 ? 'pack1' : n <= 3 ? 'pack3' : n <= 6 ? 'pack6' : n === 7 ? 'combo7' : 'combo9');
 
 // Fond du hero (image d'ambiance générée, variante légère 480 px affichée à 30 % d'opacité)
 const heroBg = (ambianceList as string[]).includes('hero-rain-roof') ? '/images/pigma/hero-rain-roof-sm.webp' : null;
@@ -121,7 +120,7 @@ const FAQ = (deskMin: number, homeMin: number) => [
   { q: 'علاش يبان أبيض كي ندهنو؟', a: 'عادي. كي يتدهن يكون سايل وشوية أبيض كي الحليب، ويولي شفاف وما يبانش غير كي ينشف كامل.' },
   { q: 'على واش نقدر ندهنو؟', a: 'السطح والتيراس، البالكونات، الحيوط والياجور، الكارلاج والفايونس، الحمام وخزانات الماء. لازم السطح يكون نقي، بلا دسم وناشف 100%.' },
   { q: 'إذا السطح كبير وتلزمني أكثر من 9 علب؟', a: 'للكميات الأكبر نعطيوك سعر خاص بيك. ابعثلنا على واتساب المساحة تاعك.' },
-  { q: 'شحال سومة التوصيل وشحال يطوّل؟', a: <>التوصيل حسب الولاية: من {deskMin} د.ج للمكتب ومن {homeMin} د.ج للدار (يبان السعر الصحيح في الاستمارة). يوصلك في 24 ساعة، و48 ساعة على الأكثر.</> },
+  { q: 'شحال سومة التوصيل وشحال يطوّل؟', a: <>عرض 4+2: التوصيل مجاني. علبة وحدة ولا عرض 2+1: حسب الولاية، من {deskMin} د.ج للمكتب ومن {homeMin} د.ج للدار. يوصلك في 24 ساعة، و48 ساعة على الأكثر.</> },
   { q: 'المنتوج أصلي؟', a: 'إيه، Stop Fuites أصلي من Pigma Color. احذرو الماركات المقلدة: تستلم العلبة وتشوفها قبل ما تخلص.' },
   { q: 'كيفاش نخلص؟', a: 'الدفع عند الاستلام: ما تخلص والو دركا. تستلم الطلب، تشوفو، ومن بعد تخلص لعامل التوصيل.' },
 ];

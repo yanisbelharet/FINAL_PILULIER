@@ -26,7 +26,7 @@ export const getOffer = (id: string) => [...PIGMA_OFFERS, ...PIGMA_COMBOS].find(
 // Isolé en LTR (U+2066…U+2069), sinon « 3 800 » s'affiche « 800 3 » dans une page RTL
 const fmt = (n: number) => `⁦${n.toLocaleString('fr-DZ').replace(/ | /g, ' ')}⁩`;
 export const da = (n: number) => `${fmt(n)} د.ج`;
-export const boxesLabel = (n: number) => (n === 1 ? 'علبة وحدة' : n === 2 ? 'جوج علب' : `${n} علب`);
+export const boxesLabel = (n: number) => (n === 1 ? 'علبة وحدة' : n === 2 ? 'زوج علب' : `${n} علب`);
 
 const OfferCard = ({ o, active, onSelect, note }: { o: PigmaOffer; active: boolean; onSelect: (id: string) => void; note?: string }) => {
   const full = o.boxes * PIGMA_UNIT_PRICE;

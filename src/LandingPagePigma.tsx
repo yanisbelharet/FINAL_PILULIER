@@ -118,7 +118,7 @@ const FAQ = (deskMin: number, homeMin: number) => [
   { q: 'شحال تغطي العلبة؟', a: 'كل 1 كلغ يغطي حوالي 4 م² بطبقتين. يعني العلبة تاع 1,4 كلغ تغطي حوالي 5,6 م². استعمل الحاسبة باش تعرف شحال من علبة تلزمك.' },
   { q: 'شحال من وقت باش ينشف؟', a: 'طبقة التحضير: 6 ساعات. بين الطبقة الأولى والثانية: 24 ساعة. وما لازمش تطيح الشتا 24 حتى 48 ساعة من بعد الدهان.' },
   { q: 'علاش يبان أبيض كي ندهنو؟', a: 'عادي. كي يتدهن يكون سايل وشوية أبيض كي الحليب، ويولي شفاف وما يبانش غير كي ينشف كامل.' },
-  { q: 'على واش نقدر ندهنو؟', a: 'السطح والتيراس، البالكونات، الحيوط والياجور، الزليج والفايونس، الحمام وخزانات الماء. لازم السطح يكون نقي، بلا دسم وناشف 100%.' },
+  { q: 'على واش نقدر ندهنو؟', a: 'السطح والتيراس، البالكونات، الحيوط والياجور، الكارلاج والفايونس، الحمام وخزانات الماء. لازم السطح يكون نقي، بلا دسم وناشف 100%.' },
   { q: 'إذا السطح كبير وتلزمني أكثر من 9 علب؟', a: 'للكميات الأكبر نعطيوك سعر خاص بيك. ابعثلنا على واتساب المساحة تاعك.' },
   { q: 'شحال سومة التوصيل وشحال يطوّل؟', a: <>عرض 4+2: التوصيل مجاني. علبة وحدة ولا عرض 2+1: حسب الولاية، من {deskMin} د.ج للمكتب ومن {homeMin} د.ج للدار. يوصلك في 24 ساعة، و48 ساعة على الأكثر.</> },
   { q: 'كيفاش نخلص؟', a: 'الدفع عند الاستلام: ما تخلص والو دركا. تستلم الطلب، تشوفو، ومن بعد تخلص لعامل التوصيل.' },
@@ -304,7 +304,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
           <div className="mt-6 lg:mt-0 lg:[grid-area:text] lg:self-start">
             <p className="text-[16px] lg:text-[19px] font-semibold text-sky-100/90 leading-relaxed lg:mt-5">
               <b className="text-white">Stop Fuites</b> من <b className="text-white">Pigma Color</b>، النسخة <b className="text-white">الشفافة</b>:
-              غشاء مرن يتدهن من برّا، يسكّر على الماء وما يبدلش شكل الزليج.
+              غشاء مرن يتدهن من برّا، يسكّر على الماء وما يبدلش شكل الكارلاج.
             </p>
             <div className="hidden lg:block mt-7">
               <button type="button" onClick={toForm}
@@ -341,7 +341,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
             <H2>غشاء شفاف يخلّي الماء يزلق وما يدخلش</H2>
             <ul className="mt-5 space-y-3">
               {[
-                { Icon: Eye, t: 'شفاف', d: 'ما يبدلش شكل الزليج ولا الدالة.' },
+                { Icon: Eye, t: 'شفاف', d: 'ما يبدلش شكل الكارلاج ولا الدالة.' },
                 { Icon: Layers, t: 'مرن (élastique)', d: 'يتبع حركة السطح مع السخانة والبرد وما يتشققش.' },
                 { Icon: Sun, t: 'يقاوم الشمس', d: 'أكريليك مرن يقاوم الأشعة UV والعوامل الجوية.' },
                 { Icon: PaintRoller, t: 'بلا تكسير وبلا معلم', d: 'يتدهن بالبروسة ولا بالرولو.' },
@@ -354,7 +354,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
             </ul>
             <p className="mt-5 text-[13px] font-black text-slate-500">يتدهن على:</p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {['السطح والتيراس', 'البالكون', 'الحيوط والياجور', 'الزليج والفايونس', 'الحمام', 'خزانات الماء'].map(t => (
+              {['السطح والتيراس', 'البالكون', 'الحيوط والياجور', 'الكارلاج والفايونس', 'الحمام', 'خزانات الماء'].map(t => (
                 <span key={t} className="text-[13px] font-bold text-[#0B1B3F] bg-[#F3F7FB] ring-1 ring-sky-100 rounded-full px-3 py-1.5">{t}</span>
               ))}
             </div>
@@ -372,7 +372,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
           {[
             { Icon: Sparkles, t: 'نقّي ونشّف', d: <>نحّي الغبرة والدسم (بلا أسيد قوي). السطح لازم يكون <b>ناشف 100%</b>.</> },
             { Icon: Droplets, t: 'طبقة تحضير مخففة', d: <>زيد <b>10 حتى 20% ماء</b>، وخلّيها تنشف <b>6 ساعات</b>.</> },
-            { Icon: PaintRoller, t: 'جوج طبقات صافيين', d: <>استنى <b>24 ساعة</b> بيناتهم، والثانية بعكس الاتجاه.</> },
+            { Icon: PaintRoller, t: 'زوج طبقات صافيين', d: <>استنى <b>24 ساعة</b> بيناتهم، والثانية بعكس الاتجاه.</> },
           ].map((s, i) => (
             <li key={s.t} className="pg-reveal flex items-center gap-3 rounded-3xl bg-white p-4 ring-1 ring-slate-200">
               <span className="shrink-0 w-11 h-11 rounded-2xl bg-[#0B1B3F] text-[#FFD60A] font-black flex items-center justify-center text-[19px]">{i + 1}</span>

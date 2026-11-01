@@ -5,8 +5,9 @@ import cookieParser from "cookie-parser";
 import crypto from "crypto";
 
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, increment, where, Timestamp } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, increment, where, Timestamp, startAfter } from "firebase/firestore";
 import { isAdminRequest, publicConfig } from "./api/_configAccess.js";
+import { toSheetOrder, pushOrdersToSheet } from "./api/_sheets.js";
 
 console.log("[SERVER] server.ts loaded");
 
@@ -482,6 +483,40 @@ const wilayaMap: Record<string, string> = {
     }
   });
 
+  // ---------- Google Sheets (script Apps Script de la feuille) ----------
+  // Test de la liaison : envoi d'une liste vide (aucune ligne ajoutée), le script renvoie l'URL de la feuille
+  app.post("/api/admin/sheets/test", authMiddleware, async (req, res) => {
+    try {
+      const config: any = await getConfig();
+      const r = await pushOrdersToSheet(String(config.sheetWebhookUrl || ''), String(config.sheetSecret || ''), [], 9000);
+      if (r.ok && r.sheetUrl && r.sheetUrl !== config.sheetLink) await setDoc(doc(db, "config", "main"), { sheetLink: r.sheetUrl }, { merge: true });
+      res.json(r);
+    } catch (error: any) {
+      res.status(500).json({ ok: false, error: String(error?.message || error) });
+    }
+  });
+
+  // Envoi de l'historique par paquets de 100 (un appel court par paquet, le dashboard enchaîne avec `after`).
+  // Le script ignore les commandes déjà présentes : relancer ne crée pas de doublon.
+  app.post("/api/admin/sheets/backfill", authMiddleware, async (req, res) => {
+    try {
+      const config: any = await getConfig();
+      if (!config.sheetWebhookUrl) return res.json({ ok: false, error: "Aucun script Google Sheets n'est configuré." });
+      const after = typeof req.body?.after === 'string' && req.body.after ? Timestamp.fromDate(new Date(req.body.after)) : null;
+      const q = after
+        ? query(collection(db, "orders"), orderBy("createdAt", "asc"), startAfter(after), limit(100))
+        : query(collection(db, "orders"), orderBy("createdAt", "asc"), limit(100));
+      const snap = await getDocs(q);
+      const batch = snap.docs.map(d => toSheetOrder(d.id, d.data()));
+      if (!batch.length) return res.json({ ok: true, added: 0, sent: 0, done: true });
+      const r = await pushOrdersToSheet(String(config.sheetWebhookUrl), String(config.sheetSecret || ''), batch, 9000);
+      if (!r.ok) return res.json({ ...r, sent: 0 });
+      res.json({ ok: true, added: r.added || 0, sent: batch.length, done: batch.length < 100, next: batch[batch.length - 1].createdAt });
+    } catch (error: any) {
+      res.status(500).json({ ok: false, error: String(error?.message || error) });
+    }
+  });
+
   app.get("/api/orders", authMiddleware, async (req, res) => {
     try {
       const q = query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(100));
@@ -592,7 +627,7 @@ const wilayaMap: Record<string, string> = {
 
       // Save order to Firestore
       try {
-        await addDoc(collection(db, "orders"), {
+        const orderRef = await addDoc(collection(db, "orders"), {
           name,
           phone,
           secondaryPhone: secondaryPhone || '',
@@ -619,6 +654,13 @@ const wilayaMap: Record<string, string> = {
           sheetSynced: false,
           eventId: eventId || `ORDER_${nextOrderNumber}_${Date.now()}`
         });
+        // Google Sheets (serveur long : envoi en arrière-plan, sans bloquer la commande)
+        if (configData.sheetWebhookUrl) {
+          pushOrdersToSheet(configData.sheetWebhookUrl, configData.sheetSecret || '', [toSheetOrder(orderRef.id, {
+            name, phone, wilaya: wilaya || city, commune: commune || address, address, deliveryType, price, productName, bundleTitle,
+            quantity, source, displayId, createdAt: new Date().toISOString(),
+          })]).then(r => { if (!r.ok) console.error("[SHEETS] Error:", r.error); });
+        }
       } catch (err) {
         console.error("Error saving order to Firestore:", err);
       }

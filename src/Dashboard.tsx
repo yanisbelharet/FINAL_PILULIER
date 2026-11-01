@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Settings, Save, LogOut, TrendingUp, Users, ShoppingCart, ShoppingBag, Tag, Eye, Package, DollarSign, LayoutDashboard, BarChart3, Bell, Clock, Plane, Phone, CheckCircle, XCircle, Search, RefreshCw, AlertCircle, MapPin, Shield, Ban, Globe } from 'lucide-react';
+import { Lock, Settings, Save, LogOut, TrendingUp, Users, ShoppingCart, ShoppingBag, Tag, Eye, Package, DollarSign, LayoutDashboard, BarChart3, Bell, Clock, Plane, Phone, CheckCircle, XCircle, Search, RefreshCw, AlertCircle, MapPin, Shield, Ban, Globe, Copy, ExternalLink, Upload } from 'lucide-react';
 import * as import_data from './data';
 import { motion } from 'motion/react';
-import { initAuth, googleSignIn, getAccessToken, logout } from './firebaseAuth';
-import { User } from 'firebase/auth';
+import { buildAppsScript } from './sheetsAppsScript';
 
 export default function Dashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -34,12 +33,11 @@ export default function Dashboard() {
   const [blockedIps, setBlockedIps] = useState<string[]>([]);
   const [newBlockIpInput, setNewBlockIpInput] = useState('');
   const [ipActionLoading, setIpActionLoading] = useState<string | null>(null);
-  const [googleUser, setGoogleUser] = useState<User | null>(null);
-  const [googleToken, setGoogleToken] = useState<string | null>(null);
-  const [syncingSheets, setSyncingSheets] = useState(false);
-  const [syncDateFilter, setSyncDateFilter] = useState('all');
+  // Google Sheets : le serveur envoie chaque commande au script Apps Script de la feuille
   const [sheetMessage, setSheetMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
-  const [customSheetInput, setCustomSheetInput] = useState('');
+  const [sheetUrlInput, setSheetUrlInput] = useState('');
+  const [sheetBusy, setSheetBusy] = useState<null | 'save' | 'test' | 'backfill' | 'copy'>(null);
+  const [sheetScript, setSheetScript] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [dateFilter, setDateFilter] = useState('all');
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -50,206 +48,101 @@ export default function Dashboard() {
 
 
   const [saving, setSaving] = useState(false);
-  const [previousOrderCount, setPreviousOrderCount] = useState(0);
   const [saveMessage, setSaveMessage] = useState('');
 
   
-  const handleGoogleSignIn = async () => {
+  // Code secret partagé avec le script : créé une seule fois et enregistré dans la config
+  const ensureSheetSecret = async (): Promise<string> => {
+    if (config.sheetSecret) return config.sheetSecret;
+    const secret = (crypto as any).randomUUID ? (crypto as any).randomUUID().replace(/-/g, '') : Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const updatedConfig = { ...config, sheetSecret: secret };
+    const res = await fetchAuth('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatedConfig) });
+    if (!res.ok) throw new Error("Impossible d'enregistrer le code secret.");
+    setConfig(updatedConfig);
+    return secret;
+  };
+
+  const copySheetScript = async () => {
+    setSheetBusy('copy');
+    setSheetMessage(null);
     try {
-      const result = await googleSignIn();
-      if (result) {
-        setGoogleUser(result.user);
-        setGoogleToken(result.accessToken);
-        setSheetMessage({ type: 'success', text: 'Connecté à Google avec succès.' });
+      const code = buildAppsScript(await ensureSheetSecret());
+      setSheetScript(code);
+      try {
+        await navigator.clipboard.writeText(code);
+        setSheetMessage({ type: 'success', text: 'Script copié. Collez-le dans Extensions > Apps Script de votre feuille.' });
+      } catch {
+        setSheetMessage({ type: 'success', text: 'Copiez le script ci-dessous (sélectionnez tout le texte).' });
       }
-    } catch (err) {
-      console.error(err);
-      setSheetMessage({ type: 'error', text: 'Échec de la connexion Google.' });
+    } catch (err: any) {
+      setSheetMessage({ type: 'error', text: err.message || 'Erreur' });
+    } finally {
+      setSheetBusy(null);
     }
   };
 
-  
-  const saveCustomSheetId = async () => {
-    let extractedId = customSheetInput.trim();
-    if (extractedId.includes('/d/')) {
-      const match = extractedId.match(/\/d\/([a-zA-Z0-9-_]+)/);
-      if (match) extractedId = match[1];
-    }
-    
-    if (extractedId) {
-      const updatedConfig = { ...config, spreadsheetId: extractedId };
-      setConfig(updatedConfig);
-      await fetchAuth('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedConfig)
-      });
-      setCustomSheetInput('');
-      setSheetMessage({ type: 'success', text: 'Fichier Google Sheet mis à jour !' });
-    }
+  const testSheetConnection = async () => {
+    const res = await fetchAuth('/api/admin/sheets/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const data = await res.json().catch(() => ({ ok: false, error: 'Réponse invalide du serveur' }));
+    if (data.ok && data.sheetUrl) setConfig((c: any) => ({ ...c, sheetLink: data.sheetUrl }));
+    return data;
   };
 
-  const handleSyncToSheets = async (isAutoSync: boolean | React.MouseEvent = false) => {
-    if (typeof isAutoSync !== 'boolean') isAutoSync = false;
-    if (!googleToken) {
-      setSheetMessage({ type: 'error', text: 'Veuillez vous connecter à Google.' });
+  const saveSheetUrl = async () => {
+    const url = sheetUrlInput.trim();
+    if (!/^https:\/\/script\.google\.com\/.+\/exec/.test(url)) {
+      setSheetMessage({ type: 'error', text: "L'URL doit ressembler à https://script.google.com/macros/s/…/exec" });
       return;
     }
-    
-    setSyncingSheets(true);
+    setSheetBusy('save');
     setSheetMessage(null);
-    
     try {
-      let spreadsheetId = config.spreadsheetId;
-      
-      if (!spreadsheetId) {
-        const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${googleToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            properties: { title: 'Commandes - ' + new Date().toLocaleDateString() },
-            sheets: [{ properties: { title: 'Commandes' } }]
-          })
-        });
-        
-        if (!createRes.ok) throw new Error('Échec de la création du fichier Google Sheet');
-        const sheetData = await createRes.json();
-        spreadsheetId = sheetData.spreadsheetId;
-        
-        await fetchAuth('/api/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...config, spreadsheetId })
-        });
-        setConfig({ ...config, spreadsheetId });
-        
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:I1?valueInputOption=USER_ENTERED`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${googleToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            values: [['ID', 'Date', 'Client', 'Téléphone', 'Wilaya', 'Commune', 'Type Livraison', 'Produit', 'Prix Total']]
-          })
-        });
-      }
-      
-      // Fetch existing IDs from Google Sheets to avoid duplicates
-      let existingIds = [];
-      let sheetName = 'Commandes';
-      try {
-        // First get spreadsheet info to find the first sheet name if Commandes doesn't exist
-        const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
-          headers: { 'Authorization': `Bearer ${googleToken}` }
-        });
-        if (metaRes.status === 404) {
-          throw new Error("Le fichier Google Sheets n'existe plus ou est inaccessible. Veuillez lier un nouveau fichier.");
-        }
-        if (metaRes.status === 401) {
-          setGoogleToken(null);
-          setGoogleUser(null);
-          localStorage.removeItem("googleAccessToken");
-          throw new Error("Session Google expirée. Veuillez vous reconnecter.");
-        }
-        if (metaRes.ok) {
-           const metaData = await metaRes.json();
-           if (metaData.sheets && metaData.sheets.length > 0) {
-              const hasCommandes = metaData.sheets.some(s => s.properties.title === 'Commandes');
-              if (!hasCommandes) {
-                 sheetName = metaData.sheets[0].properties.title;
-              }
-           }
-        }
-      
-        const sheetDataRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A:A`, {
-          headers: { 'Authorization': `Bearer ${googleToken}` }
-        });
-        if (sheetDataRes.ok) {
-           const existingData = await sheetDataRes.json();
-           if (existingData.values) {
-              existingIds = existingData.values.map(row => String(row[0]));
-           }
-        }
-      } catch (err: any) {
-        if (err.message.includes('Session Google') || err.message.includes('fichier Google Sheets')) {
-          throw err; // re-throw to the outer try/catch
-        }
-        console.error("Error fetching existing sheets data:", err);
-      }
-
-      // Filter for new orders (not yet in the sheet)
-      // Display ID or internal ID
-      let ordersToSync = orders;
-      if (!isAutoSync && syncDateFilter !== 'all') {
-         const now = new Date();
-         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-         const yesterday = new Date(today);
-         yesterday.setDate(yesterday.getDate() - 1);
-         const last7days = new Date(today);
-         last7days.setDate(last7days.getDate() - 7);
-         
-         ordersToSync = orders.filter(o => {
-            const d = new Date(o.createdAt);
-            if (syncDateFilter === 'today') return d >= today;
-            if (syncDateFilter === 'yesterday') return d >= yesterday && d < today;
-            if (syncDateFilter === '7days') return d >= last7days;
-            return true;
-         });
-      }
-      const newOrders = ordersToSync.filter(o => !existingIds.includes(String(o.displayId || o.id)));
-      
-      if (newOrders.length === 0) {
-         setSheetMessage({ type: 'success', text: 'Toutes les commandes sont déjà synchronisées.' });
-         setSyncingSheets(false);
-         return;
-      }
-      
-      // Sort to append oldest first among the new ones
-      const sortedNewOrders = [...newOrders].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-
-      const values = sortedNewOrders.map(o => [
-        o.displayId || o.id,
-        o.createdAt ? new Date(o.createdAt).toLocaleString('fr-FR') : new Date().toLocaleString('fr-FR'),
-        o.name,
-        o.phone,
-        o.wilaya,
-        o.commune,
-        o.deliveryType === 'home' ? 'À Domicile' : 'Point Relais',
-        o.productName || 'Produit',
-        o.price
-      ]);
-      
-      const appendRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!A1:append?valueInputOption=USER_ENTERED`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${googleToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ values: values })
-      });
-      if (!appendRes.ok) {
-        const errorData = await appendRes.text();
-        console.error("Append failed:", errorData);
-        if (appendRes.status === 401) {
-          setGoogleToken(null);
-          setGoogleUser(null);
-          localStorage.removeItem("googleAccessToken");
-          throw new Error("Session Google expirée. Veuillez vous reconnecter.");
-        }
-        throw new Error('Erreur API Sheets: ' + appendRes.status);
-      }
-      
-      setSheetMessage({ type: 'success', text: 'Synchronisation réussie avec Google Sheets !' });
-      
+      await ensureSheetSecret();
+      const res = await fetchAuth('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...config, sheetWebhookUrl: url }) });
+      if (!res.ok) throw new Error("Impossible d'enregistrer l'URL.");
+      setConfig((c: any) => ({ ...c, sheetWebhookUrl: url }));
+      const test = await testSheetConnection();
+      setSheetMessage(test.ok
+        ? { type: 'success', text: 'Feuille connectée ! Chaque nouvelle commande y sera ajoutée automatiquement.' }
+        : { type: 'error', text: 'URL enregistrée mais le test a échoué : ' + test.error });
+      if (test.ok) setSheetUrlInput('');
     } catch (err: any) {
-      console.error(err);
-      setSheetMessage({ type: 'error', text: err.message || 'Erreur de synchronisation' });
+      setSheetMessage({ type: 'error', text: err.message || 'Erreur' });
     } finally {
-      setSyncingSheets(false);
+      setSheetBusy(null);
+    }
+  };
+
+  const runSheetTest = async () => {
+    setSheetBusy('test');
+    setSheetMessage(null);
+    const test = await testSheetConnection();
+    setSheetMessage(test.ok ? { type: 'success', text: 'La liaison fonctionne.' } : { type: 'error', text: test.error || 'Échec du test' });
+    setSheetBusy(null);
+  };
+
+  // Envoie toutes les commandes existantes, par paquets de 100 (les commandes déjà présentes sont ignorées par le script)
+  const runSheetBackfill = async () => {
+    setSheetBusy('backfill');
+    setSheetMessage(null);
+    let after: string | undefined;
+    let sent = 0, added = 0;
+    try {
+      for (let i = 0; i < 500; i++) {
+        const res = await fetchAuth('/api/admin/sheets/backfill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ after }) });
+        const data = await res.json().catch(() => ({ ok: false, error: 'Réponse invalide du serveur' }));
+        if (!data.ok) throw new Error(data.error || 'Erreur');
+        sent += data.sent || 0;
+        added += data.added || 0;
+        setSheetMessage({ type: 'success', text: `Envoi en cours… ${sent} commandes vérifiées, ${added} ajoutées.` });
+        if (data.done || !data.next) break;
+        after = data.next;
+      }
+      setSheetMessage({ type: 'success', text: `Terminé : ${sent} commandes vérifiées, ${added} ajoutées (les autres étaient déjà dans la feuille).` });
+    } catch (err: any) {
+      setSheetMessage({ type: 'error', text: `Arrêté après ${sent} commandes : ${err.message}` });
+    } finally {
+      setSheetBusy(null);
     }
   };
 
@@ -263,14 +156,6 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const unsubscribe = initAuth((user, token) => {
-      setGoogleUser(user);
-      setGoogleToken(token);
-    }, () => {
-      setGoogleUser(null);
-      setGoogleToken(null);
-    });
-
     // Check if we can fetch config to verify authentication
     fetchAuth('/api/config')
       .then(res => res.json())
@@ -377,19 +262,6 @@ export default function Dashboard() {
       setIpActionLoading(null);
     }
   };
-
-  // Auto-sync to sheets when orders length increases
-  useEffect(() => {
-    if (googleToken && config.spreadsheetId && orders.length > previousOrderCount) {
-      // Don't auto-sync on initial load if we just loaded orders, 
-      // but wait, if it's initial load, previousOrderCount is 0, it WILL sync. That's good to ensure consistency.
-      if (!syncingSheets) {
-        handleSyncToSheets(true);
-        setPreviousOrderCount(orders.length);
-      }
-    }
-  }, [orders.length, googleToken, config.spreadsheetId]);
-
 
   const updateOrderStatus = async (id: string, status: string, additionalData: any = {}) => {
     try {
@@ -1422,115 +1294,81 @@ export default function Dashboard() {
                     Intégration Google Sheets
                   </h3>
                   
-                  <p className="text-slate-600 mb-8 leading-relaxed">
-                    Connectez votre compte Google pour exporter et synchroniser automatiquement toutes vos commandes vers un fichier Google Sheets.
+                  <p className="text-slate-600 mb-6 leading-relaxed">
+                    Chaque nouvelle commande est envoyée <b>automatiquement par le serveur</b> dans votre Google Sheet, au moment où elle est passée :
+                    pas besoin de laisser le dashboard ouvert ni de se reconnecter à Google. Les commandes déjà présentes ne sont jamais ajoutées deux fois.
                   </p>
 
-                  <div className="flex flex-col gap-6 items-start">
-                    {!googleUser ? (
-                      <button 
-                        onClick={handleGoogleSignIn}
-                        className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-6 py-3 rounded-xl font-bold flex items-center gap-3 shadow-sm transition-all"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 48 48">
-                          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-                          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-                          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-                          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-                          <path fill="none" d="M0 0h48v48H0z"></path>
-                        </svg>
-                        Se connecter avec Google
-                      </button>
-                    ) : (
-                      <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-6">
-                        <div className="flex items-center justify-between mb-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-bold">
-                              {googleUser.displayName?.charAt(0) || 'U'}
-                            </div>
-                            <div>
-                              <p className="font-bold text-slate-800">{googleUser.displayName}</p>
-                              <p className="text-sm text-slate-500">{googleUser.email}</p>
-                            </div>
+                  <div className="flex flex-col gap-5 items-stretch">
+                    {config.sheetWebhookUrl ? (
+                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle size={22} className="text-emerald-600 shrink-0" />
+                          <div>
+                            <p className="font-bold text-emerald-800">Google Sheets connecté</p>
+                            <p className="text-xs text-emerald-700 break-all">{config.sheetWebhookUrl.slice(0, 60)}…</p>
                           </div>
-                          <button 
-                            onClick={async () => { await logout(); setGoogleUser(null); setGoogleToken(null); }}
-                            className="text-sm text-rose-600 font-bold hover:underline"
-                          >
-                            Déconnexion
+                        </div>
+                        {config.sheetLink && (
+                          <a href={config.sheetLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-emerald-700 hover:underline">
+                            <ExternalLink size={16} /> Ouvrir la feuille
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">Aucune feuille n'est encore connectée. Suivez les 3 étapes ci-dessous (2 minutes).</p>
+                    )}
+
+                    <ol className="space-y-4">
+                      <li className="rounded-2xl border border-slate-200 p-5">
+                        <p className="font-bold text-slate-800 mb-1">1. Copiez le script</p>
+                        <p className="text-sm text-slate-600 mb-3">Il contient votre code secret : seul votre serveur pourra écrire dans la feuille.</p>
+                        <button onClick={copySheetScript} disabled={sheetBusy !== null}
+                          className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold text-sm inline-flex items-center gap-2 disabled:opacity-60">
+                          <Copy size={16} /> {sheetBusy === 'copy' ? 'Préparation…' : 'Copier le script'}
+                        </button>
+                        {sheetScript && (
+                          <textarea readOnly value={sheetScript} onFocus={e => e.currentTarget.select()} dir="ltr"
+                            className="mt-3 w-full h-40 font-mono text-[11px] bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-700" />
+                        )}
+                      </li>
+                      <li className="rounded-2xl border border-slate-200 p-5">
+                        <p className="font-bold text-slate-800 mb-2">2. Collez-le dans votre Google Sheet</p>
+                        <ol className="text-sm text-slate-600 space-y-1 list-decimal pr-5 pl-5">
+                          <li>Ouvrez (ou créez) votre feuille Google Sheets.</li>
+                          <li>Menu <b>Extensions › Apps Script</b>, effacez le code existant et collez le script, puis enregistrez.</li>
+                          <li><b>Déployer › Nouveau déploiement</b> › type <b>Application Web</b>.</li>
+                          <li>Exécuter en tant que : <b>Moi</b> — Qui a accès : <b>Tout le monde</b> › Déployer, puis autorisez l'accès.</li>
+                          <li>Copiez l'<b>URL de l'application Web</b> (elle finit par <code>/exec</code>).</li>
+                        </ol>
+                      </li>
+                      <li className="rounded-2xl border border-slate-200 p-5">
+                        <p className="font-bold text-slate-800 mb-3">3. Collez l'URL ici</p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input type="url" dir="ltr" placeholder="https://script.google.com/macros/s/…/exec" value={sheetUrlInput}
+                            onChange={e => setSheetUrlInput(e.target.value)}
+                            className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+                          <button onClick={saveSheetUrl} disabled={!sheetUrlInput.trim() || sheetBusy !== null}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50">
+                            {sheetBusy === 'save' ? 'Connexion…' : 'Enregistrer et tester'}
                           </button>
                         </div>
-                        
-                        <div className="border-t border-slate-200 pt-6">
-                          <div className="mb-6">
-                            <h4 className="text-md font-bold text-slate-800 mb-3">Lier un fichier Google Sheets</h4>
-                            {config.spreadsheetId ? (
-                              <div className="mb-4">
-                                <p className="text-sm font-bold text-slate-700 mb-1">Fichier Actuel :</p>
-                                <a 
-                                  href={`https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/edit`} 
-                                  target="_blank" 
-                                  rel="noreferrer"
-                                  className="text-indigo-600 hover:underline break-all"
-                                >
-                                  Ouvrir le fichier actuel
-                                </a>
-                              </div>
-                            ) : (
-                              <p className="text-sm text-amber-600 mb-4 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                                Aucun fichier Sheets n'est encore lié.
-                              </p>
-                            )}
-                            
-                            <div className="flex gap-2 mb-2">
-                              <input 
-                                type="text"
-                                placeholder="Lien ou ID du nouveau Google Sheet (Optionnel)"
-                                className="flex-1 bg-white border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                                value={customSheetInput}
-                                onChange={(e) => setCustomSheetInput(e.target.value)}
-                              />
-                              <button 
-                                onClick={saveCustomSheetId}
-                                disabled={!customSheetInput.trim()}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-50"
-                              >
-                                Lier ce fichier
-                              </button>
-                            </div>
-                            <p className="text-xs text-slate-500">Si vous laissez vide et cliquez sur synchroniser, un nouveau fichier sera créé automatiquement.</p>
-                          </div>
-                          
-                          <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl">
-                            <h4 className="text-sm font-bold text-emerald-800 mb-2">Synchronisation Manuelle</h4>
-                            <p className="text-xs text-emerald-600 mb-4">La synchronisation est automatique lors des nouvelles commandes. Vous pouvez forcer la synchronisation manuellement pour les anciennes commandes.</p>
-                            
-                            <div className="flex flex-col sm:flex-row gap-3">
-                              <select 
-                                className="bg-white border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-sm font-bold shadow-sm"
-                                value={syncDateFilter}
-                                onChange={(e) => setSyncDateFilter(e.target.value)}
-                              >
-                                <option value="all">Toutes les commandes</option>
-                                <option value="today">Aujourd'hui</option>
-                                <option value="yesterday">Hier</option>
-                                <option value="7days">7 derniers jours</option>
-                              </select>
+                      </li>
+                    </ol>
 
-                              <button
-                                onClick={handleSyncToSheets}
-                                disabled={syncingSheets}
-                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-70 shadow-sm"
-                              >
-                                <RefreshCw size={20} className={syncingSheets ? 'animate-spin' : ''} />
-                                {syncingSheets ? 'Synchronisation...' : 'Synchroniser'}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                    {config.sheetWebhookUrl && (
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button onClick={runSheetTest} disabled={sheetBusy !== null}
+                          className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-5 py-3 rounded-xl font-bold text-sm inline-flex items-center justify-center gap-2 disabled:opacity-60">
+                          <RefreshCw size={16} className={sheetBusy === 'test' ? 'animate-spin' : ''} /> Tester la liaison
+                        </button>
+                        <button onClick={runSheetBackfill} disabled={sheetBusy !== null}
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-bold text-sm inline-flex items-center justify-center gap-2 disabled:opacity-60">
+                          <Upload size={16} className={sheetBusy === 'backfill' ? 'animate-pulse' : ''} /> {sheetBusy === 'backfill' ? 'Envoi en cours…' : 'Envoyer toutes les commandes existantes'}
+                        </button>
                       </div>
                     )}
-                    
+
                     {sheetMessage && (
                       <div className={`w-full p-4 rounded-xl font-bold flex items-center gap-2 ${sheetMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                         {sheetMessage.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}

@@ -1,9 +1,10 @@
 import jwt from "jsonwebtoken";
 
-// Champs secrets de config/main : utilisés seulement côté serveur (CAPI Meta, Events API TikTok, GA4 Measurement Protocol).
+// Champs secrets de config/main : utilisés seulement côté serveur (CAPI Meta, Events API TikTok, GA4 Measurement Protocol,
+// Google Sheets) ou par le dashboard admin.
 // Ils ne doivent jamais partir dans la réponse publique de /api/config.
 // (Fichier préfixé par « _ » : Vercel n'en fait pas une route /api.)
-export const SECRET_CONFIG_KEYS = ["fbAccessToken", "tiktokAccessToken", "ga4ApiSecret"];
+export const SECRET_CONFIG_KEYS = ["fbAccessToken", "tiktokAccessToken", "ga4ApiSecret", "sheetWebhookUrl", "sheetSecret", "sheetLink", "spreadsheetId"];
 
 // Requête du dashboard admin : JWT valide dans le cookie admin_token ou l'en-tête Authorization: Bearer
 export function isAdminRequest(req: any): boolean {

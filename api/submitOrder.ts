@@ -1,6 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import crypto from "crypto";
+import { waitUntil } from "@vercel/functions";
+import { toSheetOrder, pushOrdersToSheet } from "./_sheets.js";
 
 const DELIVERY_PRICES: Record<string, { desk: number, home: number }> = {
   "01 - أدرار": { desk: 500, home: 900 },
@@ -81,21 +83,50 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { name, phone, wilaya, commune, deliveryType, price, eventId, productId, productName, productPrice, quantity } = req.body;
-      
-    // Save order to Firestore
+    const { name, phone, wilaya, commune, deliveryType, price, eventId, productId, productName, productPrice, quantity,
+      address, bundleId, bundleTitle, productTotal, currency, country, source } = req.body;
+
+    // Config lue en parallèle de l'enregistrement (Google Sheets + TikTok Events API)
+    const configPromise = getDoc(doc(db, "config", "main"))
+      .then(snap => (snap.exists() ? snap.data() : {}) as any)
+      .catch(err => { console.error("Error reading config:", err); return {} as any; });
+
+    // Save order to Firestore (tous les champs envoyés par les formulaires : produit, offre, quantité, source…)
+    const orderData: Record<string, any> = {
+      name,
+      phone,
+      wilaya,
+      commune,
+      deliveryType,
+      price,
+      ...(address ? { address } : {}),
+      ...(productId ? { productId } : {}),
+      ...(productName ? { productName } : {}),
+      ...(quantity ? { quantity: Number(quantity) || 1 } : {}),
+      ...(bundleId ? { bundleId } : {}),
+      ...(bundleTitle ? { bundleTitle } : {}),
+      ...(Number(productTotal) > 0 ? { productTotal: Number(productTotal) } : {}),
+      ...(currency ? { currency } : {}),
+      ...(country ? { country } : {}),
+      ...(source ? { source } : {}),
+      ...(eventId ? { eventId } : {}),
+    };
+    let orderId = '';
     try {
-      await addDoc(collection(db, "orders"), {
-        name,
-        phone,
-        wilaya,
-        commune,
-        deliveryType,
-        price,
-        createdAt: serverTimestamp()
-      });
+      const ref = await addDoc(collection(db, "orders"), { ...orderData, createdAt: serverTimestamp() });
+      orderId = ref.id;
     } catch (err) {
       console.error("Error saving order to Firestore:", err);
+    }
+
+    const configData: any = await configPromise;
+
+    // Google Sheets : envoi en arrière-plan (waitUntil), la réponse au client n'attend pas le script Google
+    if (orderId && configData.sheetWebhookUrl) {
+      waitUntil(
+        pushOrdersToSheet(configData.sheetWebhookUrl, configData.sheetSecret || '', [toSheetOrder(orderId, { ...orderData, createdAt: new Date().toISOString() })])
+          .then(r => { if (!r.ok) console.error("[SHEETS] Error:", r.error); })
+      );
     }
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -128,13 +159,6 @@ export default async function handler(req, res) {
 
     // TikTok Events API
     try {
-      let configData: any = {};
-      const configRef = doc(db, "config", "main");
-      const configSnap = await getDoc(configRef);
-      if (configSnap.exists()) {
-        configData = configSnap.data();
-      }
-
       if (configData.tiktokPixelId && configData.tiktokAccessToken && eventId) {
         const clientIp = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
         const userAgent = req.headers['user-agent'] || '';

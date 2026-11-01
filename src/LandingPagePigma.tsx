@@ -130,6 +130,9 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [showSticky, setShowSticky] = useState(false);
   const [videoOn, setVideoOn] = useState(false);
+  // Le hero s'affiche seul au premier rendu (LCP plus tôt), le reste de la page juste après dans une tâche séparée
+  const [rest, setRest] = useState(false);
+  const scrollPendingRef = useRef(false);
   const checkoutFiredRef = useRef(false);
   const viewFiredRef = useRef({ tt: false, fb: false });
   const counterRef = useRef<HTMLSpanElement>(null);
@@ -183,12 +186,29 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
   };
 
   const toForm = () => {
+    const form = document.getElementById('order');
+    // formulaire pas encore rendu (tap très rapide sur le CTA du hero) : on défile dès qu'il apparaît
+    if (!form) { scrollPendingRef.current = true; setRest(true); return; }
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.getElementById('order')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    form.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   };
+
+  useEffect(() => {
+    let t2: ReturnType<typeof setTimeout> | undefined;
+    const raf = requestAnimationFrame(() => { t2 = setTimeout(() => setRest(true), 0); });
+    // onglet en arrière-plan : requestAnimationFrame est suspendu
+    const fallback = setTimeout(() => setRest(true), 500);
+    return () => { cancelAnimationFrame(raf); clearTimeout(t2); clearTimeout(fallback); };
+  }, []);
+
+  useEffect(() => {
+    if (rest && scrollPendingRef.current) { scrollPendingRef.current = false; toForm(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rest]);
 
   // Bouton collant : visible une fois le hero dépassé, masqué quand le formulaire est à l'écran
   useEffect(() => {
+    if (!rest) return;
     if (!('IntersectionObserver' in window)) { setShowSticky(true); return; }
     let heroPassed = false, formVisible = false;
     const update = () => setShowSticky(heroPassed && !formVisible);
@@ -197,10 +217,11 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
     const hero = document.getElementById('pg-hero'); const form = document.getElementById('order');
     if (hero) heroObs.observe(hero); if (form) formObs.observe(form);
     return () => { heroObs.disconnect(); formObs.disconnect(); };
-  }, []);
+  }, [rest]);
 
   // GSAP + ScrollTrigger chargés après le premier affichage (n'impactent pas le LCP)
   useEffect(() => {
+    if (!rest) return;
     let cancelled = false;
     let mm: any = null;
     const start = () => Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([{ gsap }, { ScrollTrigger }]) => {
@@ -233,7 +254,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
       if ('cancelIdleCallback' in w) w.cancelIdleCallback(id); else clearTimeout(id);
       mm?.revert();
     };
-  }, []);
+  }, [rest]);
 
   // Calculatrice (limitée à 9 boîtes ; au-delà, tarif personnalisé)
   const boxesNeeded = area > 0 ? Math.ceil(area / M2_PER_BOX - 1e-9) : 0;
@@ -250,7 +271,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
     const obj = { v: from };
     const tween = g.to(obj, { v: boxesNeeded, duration: 0.5, ease: 'power2.out', onUpdate: () => { el.textContent = String(Math.round(obj.v)); } });
     return () => { tween.kill(); };
-  }, [boxesNeeded, tooBig]);
+  }, [boxesNeeded, tooBig, rest]);
 
   const deskMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.desk));
   const homeMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.home));
@@ -316,6 +337,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
         </div>
       </header>
 
+      {rest && <>
       {/* VIDÉO : la preuve, juste après le hero (chargée seulement au clic) */}
       <Section className="bg-[#0E2A5C] text-white">
         <div className="text-center pg-reveal">
@@ -472,6 +494,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
         <p className="flex items-center justify-center gap-1"><ShieldCheck size={13} /> Pigma Color و Stop Fuites علامات تجارية لأصحابها. YANIS SHOP بائع للمنتج.</p>
         <p>صورة الخلفية في الأعلى مولّدة للتوضيح فقط.</p>
       </footer>
+      </>}
 
       {/* WhatsApp flottant */}
       <a href={waLink('السلام عليكم، عندي سؤال على Stop Fuites الشفاف')} target="_blank" rel="noopener noreferrer"

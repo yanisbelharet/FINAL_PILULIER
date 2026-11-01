@@ -10,8 +10,6 @@
     <!-- DNS prefetch & Preconnect to critical CDNs -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://cdn.youcan.shop" />
-    <link rel="dns-prefetch" href="https://cdn.youcan.shop" />
     <link rel="dns-prefetch" href="https://connect.facebook.net" />
     <link rel="dns-prefetch" href="https://analytics.tiktok.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
@@ -27,6 +25,9 @@
     <!-- (les landing pages /lp/ préchargent leur propre hero plus bas) -->
     <script>
       if (location.pathname.indexOf('/lp/') !== 0) {
+        var c = document.createElement('link');
+        c.rel = 'preconnect'; c.href = 'https://cdn.youcan.shop';
+        document.head.appendChild(c);
         var h = document.createElement('link');
         h.rel = 'preload'; h.as = 'image'; h.setAttribute('fetchpriority', 'high');
         h.href = 'https://cdn.youcan.shop/stores/ba86712f261c8f3eed78e0e12a689855/others/HxVCmxikiwh6FWU4vOJ9898xYRoXH5n8uTCqLIP3.webp';
@@ -50,6 +51,12 @@
           : location.pathname.indexOf('/lp/pigma-stop-fuites') === 0 ? '/lp-assets/pigma/pot-transparent-1-4kg.webp'
           : '/lp-assets/med-alarm-hero.webp';
         document.head.appendChild(l);
+        // fond du hero de /lp/pigma-stop-fuites (7 Ko) : c'est l'élément LCP de la page
+        if (location.pathname.indexOf('/lp/pigma-stop-fuites') === 0) {
+          var bg = document.createElement('link');
+          bg.rel = 'preload'; bg.as = 'image'; bg.href = '/images/pigma/hero-rain-roof-sm.webp';
+          document.head.appendChild(bg);
+        }
       }
     </script>
   </head>

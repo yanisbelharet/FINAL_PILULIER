@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ShieldCheck, Truck, Banknote, PhoneCall, Droplets, ShoppingCart, Check, ChevronDown, Play, Sparkles, PaintRoller, Sun,
-  Calculator, BadgeCheck, MessageCircle, Eye, Layers, CloudRain, Gift, AlertTriangle,
+  Calculator, BadgeCheck, MessageCircle, Eye, Layers, CloudRain, Gift,
 } from 'lucide-react';
 import CheckoutFormPigma, { PIGMA_PRODUCT, PIGMA_UNIT_PRICE, PIGMA_BOX_KG, PIGMA_DEFAULT_OFFER, getOffer, da, boxesLabel } from './CheckoutFormPigma';
 import { DELIVERY_PRICES } from './data';
@@ -311,12 +311,11 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
               <span className="absolute top-2.5 right-2.5 bg-white text-[#0B1B3F] text-[11.5px] font-black rounded-full px-2.5 py-1 shadow flex items-center gap-1"><BadgeCheck size={13} className="text-[#1366d6]" /> صورة حقيقية</span>
             </div>
             <div className="pg-hero-badge relative -mt-7 mx-auto w-[86%] max-w-[330px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] px-4 py-2.5 text-center shadow-2xl ring-4 ring-[#0B1B3F]">
-              <p className="text-[14px] font-black leading-tight">السعر: <span className="text-[22px]">{da(PIGMA_UNIT_PRICE)}</span> للعلبة</p>
-              <p className="text-[14px] font-black leading-snug flex items-center justify-center gap-1.5"><Gift size={16} /> 2 علب + 1 مجانية بـ {da(getOffer('pack3').price)}</p>
+              <p className="text-[16px] font-black leading-snug flex items-center justify-center gap-1.5"><Gift size={17} /> 4 علب + 2 مجانيات</p>
+              <p className="text-[13px] font-black">والتوصيل مجاني</p>
             </div>
-            <p className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[12.5px] font-black">
+            <p className="mt-3 flex justify-center text-[12.5px] font-black">
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white px-3 py-1"><BadgeCheck size={14} /> منتوج أصلي</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 ring-1 ring-amber-300/60 text-amber-200 px-3 py-1"><AlertTriangle size={14} /> احذرو الماركات المقلدة</span>
             </p>
           </div>
 

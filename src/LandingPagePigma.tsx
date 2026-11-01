@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ShieldCheck, Truck, Banknote, PhoneCall, Droplets, ShoppingCart, Check, ChevronDown, Play, Sparkles, PaintRoller, Sun,
-  Calculator, BadgeCheck, MessageCircle, Eye, Layers, CloudRain, Gift,
+  Calculator, BadgeCheck, MessageCircle, Eye, Layers, CloudRain, Gift, AlertTriangle,
 } from 'lucide-react';
-import CheckoutFormPigma, { PIGMA_PRODUCT, PIGMA_UNIT_PRICE, PIGMA_BOX_KG, getOffer, da, boxesLabel } from './CheckoutFormPigma';
+import CheckoutFormPigma, { PIGMA_PRODUCT, PIGMA_UNIT_PRICE, PIGMA_BOX_KG, PIGMA_DEFAULT_OFFER, getOffer, da, boxesLabel } from './CheckoutFormPigma';
 import { DELIVERY_PRICES } from './data';
 import ambianceList from './pigma-ambiance.json';
 
@@ -23,7 +23,8 @@ const M2_PER_KG = 4;
 const M2_PER_BOX = PIGMA_BOX_KG * M2_PER_KG;
 // Au-delà, la boutique fait un tarif personnalisé
 const CALC_MAX_BOXES = 9;
-const offerForBoxes = (n: number) => (n <= 1 ? 'pack1' : n <= 3 ? 'pack3' : n <= 6 ? 'pack6' : n === 7 ? 'combo7' : 'combo9');
+// Offre la moins chère pour n boîtes (à prix égal, celle qui donne le plus de boîtes)
+const offerForBoxes = (n: number) => (n <= 1 ? 'pack1' : n <= 3 ? 'pack3' : n === 4 ? 'combo4' : n <= 7 ? 'pack7' : n === 8 ? 'combo8' : 'combo10');
 
 // Fond du hero (image d'ambiance générée, variante légère 480 px affichée à 30 % d'opacité)
 const heroBg = (ambianceList as string[]).includes('hero-rain-roof') ? '/images/pigma/hero-rain-roof-sm.webp' : null;
@@ -120,12 +121,13 @@ const FAQ = (deskMin: number, homeMin: number) => [
   { q: 'علاش يبان أبيض كي ندهنو؟', a: 'عادي. كي يتدهن يكون سايل وشوية أبيض كي الحليب، ويولي شفاف وما يبانش غير كي ينشف كامل.' },
   { q: 'على واش نقدر ندهنو؟', a: 'السطح والتيراس، البالكونات، الحيوط والياجور، الكارلاج والفايونس، الحمام وخزانات الماء. لازم السطح يكون نقي، بلا دسم وناشف 100%.' },
   { q: 'إذا السطح كبير وتلزمني أكثر من 9 علب؟', a: 'للكميات الأكبر نعطيوك سعر خاص بيك. ابعثلنا على واتساب المساحة تاعك.' },
-  { q: 'شحال سومة التوصيل وشحال يطوّل؟', a: <>عرض 4+2: التوصيل مجاني. علبة وحدة ولا عرض 2+1: حسب الولاية، من {deskMin} د.ج للمكتب ومن {homeMin} د.ج للدار. يوصلك في 24 ساعة، و48 ساعة على الأكثر.</> },
+  { q: 'شحال سومة التوصيل وشحال يطوّل؟', a: <>التوصيل حسب الولاية: من {deskMin} د.ج للمكتب ومن {homeMin} د.ج للدار (يبان السعر الصحيح في الاستمارة). يوصلك في 24 ساعة، و48 ساعة على الأكثر.</> },
+  { q: 'المنتوج أصلي؟', a: 'إيه، Stop Fuites أصلي من Pigma Color. احذرو الماركات المقلدة: تستلم العلبة وتشوفها قبل ما تخلص.' },
   { q: 'كيفاش نخلص؟', a: 'الدفع عند الاستلام: ما تخلص والو دركا. تستلم الطلب، تشوفو، ومن بعد تخلص لعامل التوصيل.' },
 ];
 
 export default function LandingPagePigma({ config, onPurchase }: { config: any; onPurchase: (p: number, product: any, formData?: any) => void }) {
-  const [offerId, setOfferId] = useState('pack6');
+  const [offerId, setOfferId] = useState(PIGMA_DEFAULT_OFFER);
   const [area, setArea] = useState(10);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [showSticky, setShowSticky] = useState(false);
@@ -310,9 +312,13 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
               <span className="absolute top-2.5 right-2.5 bg-white text-[#0B1B3F] text-[11.5px] font-black rounded-full px-2.5 py-1 shadow flex items-center gap-1"><BadgeCheck size={13} className="text-[#1366d6]" /> صورة حقيقية</span>
             </div>
             <div className="pg-hero-badge relative -mt-7 mx-auto w-[86%] max-w-[330px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] px-4 py-2.5 text-center shadow-2xl ring-4 ring-[#0B1B3F]">
-              <p className="text-[16px] font-black leading-snug flex items-center justify-center gap-1.5"><Gift size={17} /> 4 علب + 2 مجانيات</p>
-              <p className="text-[13px] font-black">والتوصيل مجاني</p>
+              <p className="text-[14px] font-black leading-tight">السعر: <span className="text-[22px]">{da(PIGMA_UNIT_PRICE)}</span> للعلبة</p>
+              <p className="text-[14px] font-black leading-snug flex items-center justify-center gap-1.5"><Gift size={16} /> 2 علب + 1 مجانية بـ {da(getOffer('pack3').price)}</p>
             </div>
+            <p className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[12.5px] font-black">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white px-3 py-1"><BadgeCheck size={14} /> منتوج أصلي</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 ring-1 ring-amber-300/60 text-amber-200 px-3 py-1"><AlertTriangle size={14} /> احذرو الماركات المقلدة</span>
+            </p>
           </div>
 
           <div className="lg:hidden mt-5">

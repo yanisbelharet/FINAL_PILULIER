@@ -6,7 +6,7 @@ import crypto from "crypto";
 
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, increment, where, Timestamp } from "firebase/firestore";
-import { isAdminRequest, publicConfig } from "./api/_configAccess";
+import { isAdminRequest, publicConfig } from "./api/_configAccess.js";
 
 console.log("[SERVER] server.ts loaded");
 

@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import jwt from "jsonwebtoken";
-import { isAdminRequest, publicConfig } from "./_configAccess";
+import { isAdminRequest, publicConfig } from "./_configAccess.js";
 
 const firebaseConfig = {
   projectId: "gen-lang-client-0983661862",

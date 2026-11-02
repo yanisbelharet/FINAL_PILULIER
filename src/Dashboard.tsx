@@ -30,6 +30,8 @@ export default function Dashboard() {
   });
   
   const [orders, setOrders] = useState<any[]>([]);
+  // Totaux sur toutes les commandes (la liste /api/orders ne contient que les 100 dernières)
+  const [orderStats, setOrderStats] = useState<null | Record<'all' | 'week' | 'today', { orders: number; revenue: number }>>(null);
   const [blockedIps, setBlockedIps] = useState<string[]>([]);
   const [newBlockIpInput, setNewBlockIpInput] = useState('');
   const [ipActionLoading, setIpActionLoading] = useState<string | null>(null);
@@ -169,6 +171,18 @@ export default function Dashboard() {
     return fetch(url, { ...options, headers, credentials: 'include' });
   };
 
+  // Mêmes périodes que le filtre de dates : aujourd'hui depuis minuit (heure locale), semaine = 7 derniers jours
+  const fetchOrderStats = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const week = new Date(now);
+    week.setDate(now.getDate() - 7);
+    fetchAuth(`/api/admin/order-stats?today=${encodeURIComponent(today.toISOString())}&week=${encodeURIComponent(week.toISOString())}`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (data && data.all) setOrderStats(data); })
+      .catch(() => {});
+  };
+
   useEffect(() => {
     // Check if we can fetch config to verify authentication
     fetchAuth('/api/config')
@@ -217,6 +231,7 @@ export default function Dashboard() {
       const configInterval = setInterval(() => {
         fetchAuth('/api/config').then(res => res.json()).then(data => setConfig(data)).catch(() => {});
         fetchBlockedIps();
+        fetchOrderStats();
       }, 15000); // Poll config and visits every 15s
       return () => {
         clearInterval(interval);
@@ -226,6 +241,11 @@ export default function Dashboard() {
       fetchOrders(); // Initial check
     }
   }, [isAuthenticated]);
+
+  // Totaux recalculés à l'ouverture et dès qu'une nouvelle commande arrive
+  useEffect(() => {
+    if (isAuthenticated) fetchOrderStats();
+  }, [isAuthenticated, orders.length, orders[0]?.id]);
 
   const handleBlockIp = async (ipToBlock: string) => {
     if (!ipToBlock || !ipToBlock.trim()) return;
@@ -522,8 +542,10 @@ export default function Dashboard() {
     return true;
   });
 
-  const totalRevenue = filteredOrders.reduce((acc, order) => acc + (order.price || 0), 0);
-  const totalOrders = filteredOrders.length;
+  const periodStats = orderStats?.[dateFilter as 'all' | 'week' | 'today'];
+  const totalRevenue = periodStats ? periodStats.revenue : filteredOrders.reduce((acc, order) => acc + (Number(order.price) || 0), 0);
+  const totalOrders = periodStats ? periodStats.orders : filteredOrders.length;
+  const allOrdersCount = orderStats?.all.orders ?? orders.length;
 
   const handleDateFilterChange = (filter: string) => {
     setDateFilter(filter);
@@ -601,8 +623,8 @@ export default function Dashboard() {
           >
             <Package size={20} />
             Commandes
-            {orders.length > 0 && (
-              <span className="ml-auto bg-slate-700 text-white text-xs font-bold px-2 py-0.5 rounded-full">{orders.length}</span>
+            {allOrdersCount > 0 && (
+              <span className="ml-auto bg-slate-700 text-white text-xs font-bold px-2 py-0.5 rounded-full">{allOrdersCount}</span>
             )}
           </button>
 
@@ -793,7 +815,7 @@ export default function Dashboard() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                   <div>
                     <h2 className="text-2xl font-black text-slate-900 mb-1">Liste des Commandes</h2>
-                    <p className="text-slate-500 font-medium">{filteredOrders.length} commandes trouvées</p>
+                    <p className="text-slate-500 font-medium">{totalOrders} commandes trouvées{totalOrders > filteredOrders.length ? ` (les ${filteredOrders.length} plus récentes sont affichées)` : ''}</p>
                   </div>
                   <div className="bg-white rounded-lg p-1 border border-slate-200 shadow-sm flex items-center gap-1 self-start md:self-auto">
                     <button onClick={() => handleDateFilterChange('all')} className={`px-3 py-1.5 text-sm font-bold rounded-md transition-all ${dateFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>Tout</button>

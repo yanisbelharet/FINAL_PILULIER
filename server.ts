@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser";
 import crypto from "crypto";
 
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, increment, where, Timestamp, startAfter } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp, increment, where, Timestamp, startAfter, getAggregateFromServer, count, sum } from "firebase/firestore";
 import { isAdminRequest, publicConfig } from "./api/_configAccess.js";
 import { toSheetOrder, pushOrdersToSheet } from "./api/_sheets.js";
 
@@ -537,6 +537,32 @@ const wilayaMap: Record<string, string> = {
     } catch (error) {
       console.error("Error fetching orders:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Totaux de l'aperçu (nombre de commandes et revenus) calculés par Firestore sur TOUTES les commandes :
+  // /api/orders ne renvoie que les 100 dernières. Une agrégation coûte 1 lecture par tranche de 1000 commandes.
+  // ?today=…&week=… : début de la journée / de la semaine (ISO), calculés par le navigateur dans son fuseau.
+  app.get("/api/admin/order-stats", authMiddleware, async (req, res) => {
+    try {
+      const totals = async (since?: string) => {
+        const start = since ? new Date(since) : null;
+        const q = start && !isNaN(start.getTime())
+          ? query(collection(db, "orders"), where("createdAt", ">=", Timestamp.fromDate(start)))
+          : collection(db, "orders");
+        const snap = await getAggregateFromServer(q, { orders: count(), revenue: sum("price") });
+        return { orders: snap.data().orders, revenue: snap.data().revenue };
+      };
+      const [all, week, today] = await Promise.all([
+        totals(),
+        totals(String(req.query.week || '')),
+        totals(String(req.query.today || '')),
+      ]);
+      res.set('Cache-Control', 'private, no-store');
+      res.json({ all, week, today });
+    } catch (error: any) {
+      console.error("Error computing order stats:", error);
+      res.status(500).json({ error: String(error?.message || error) });
     }
   });
 

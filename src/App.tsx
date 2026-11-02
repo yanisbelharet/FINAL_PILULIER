@@ -12,6 +12,7 @@ const LandingPageLP = lazy(() => import('./LandingPageLP'));
 const AdminApp = lazy(() => import('./AdminApp'));
 const LandingPageProelasticLP = lazy(() => import('./LandingPageProelasticLP'));
 const LandingPagePigma = lazy(() => import('./LandingPagePigma'));
+const LandingPagePigma16 = lazy(() => import('./LandingPagePigma16'));
 
 // Pages internes (dashboard /admin et app mobile /app) : pas de pixels ni de comptage de visites
 const isInternalPage = () => /^\/(admin|app)(\/|$)/.test(window.location.pathname);
@@ -402,6 +403,7 @@ export default function App() {
           <Route path="/lp/med-alarm" element={<LandingPageLP config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/proelastic" element={<LandingPageProelasticLP config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/pigma-stop-fuites" element={<LandingPagePigma config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/lp/pigma-16kg" element={<LandingPagePigma16 config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/app" element={<AdminApp />} />
           <Route path="/thank-you" element={<ThankYou config={config} />} />

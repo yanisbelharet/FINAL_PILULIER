@@ -8,6 +8,7 @@ import type { OutputChunk } from 'rollup';
 // soit un aller-retour réseau de plus avant l'affichage). Clé : début du chemin ; valeur : fichier source de la page.
 const LP_PRELOAD: Record<string, string> = {
   '/lp/pigma-stop-fuites': 'src/LandingPagePigma.tsx',
+  '/lp/pigma-16kg': 'src/LandingPagePigma16.tsx',
 };
 
 function lpModulePreload(routes: Record<string, string>): Plugin {

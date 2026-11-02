@@ -66,10 +66,11 @@
         l.rel = 'preload'; l.as = 'image'; l.setAttribute('fetchpriority', 'high');
         l.href = location.pathname.indexOf('/lp/proelastic') === 0 ? '/lp-assets/proelastic/pot-1kg.webp'
           : location.pathname.indexOf('/lp/pigma-stop-fuites') === 0 ? '/lp-assets/pigma/pot-transparent-1-4kg.webp'
+          : location.pathname.indexOf('/lp/pigma-16kg') === 0 ? '/lp-assets/pigma/pots-1-4kg-5kg-pluie.webp'
           : '/lp-assets/med-alarm-hero.webp';
         document.head.appendChild(l);
-        // fond du hero de /lp/pigma-stop-fuites (7 Ko) : c'est l'élément LCP de la page
-        if (location.pathname.indexOf('/lp/pigma-stop-fuites') === 0) {
+        // fond du hero des pages Pigma (7 Ko) : c'est l'élément LCP de ces pages
+        if (location.pathname.indexOf('/lp/pigma-stop-fuites') === 0 || location.pathname.indexOf('/lp/pigma-16kg') === 0) {
           var bg = document.createElement('link');
           bg.rel = 'preload'; bg.as = 'image'; bg.href = '/images/pigma/hero-rain-roof-sm.webp';
           document.head.appendChild(bg);

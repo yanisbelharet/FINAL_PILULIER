@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Phone, ChevronDown, Lock, Truck, Building2, AlertCircle, Check, PhoneCall, Calculator } from 'lucide-react';
 import { WILAYAS, DELIVERY_PRICES } from './data';
 import { normalizePhone, isValidAlgerianMobile, getOrderSource } from './CheckoutFormLP';
+import { da } from './pigmaFormat';
 
 export const PIGMA_PRODUCT = { id: 'pigma-stop-fuites-transparent', name: 'Pigma Color Stop Fuites Transparent 1,4 kg' };
 // Prix normal d'une boîte de 1,4 kg (fixé par la boutique)
@@ -25,9 +26,7 @@ export const PIGMA_COMBOS: PigmaOffer[] = [
 export const PIGMA_DEFAULT_OFFER = 'pack3';
 export const getOffer = (id: string) => [...PIGMA_OFFERS, ...PIGMA_COMBOS].find(o => o.id === id) || PIGMA_OFFERS[1];
 
-// Isolé en LTR (U+2066…U+2069), sinon « 3 800 » s'affiche « 800 3 » dans une page RTL
-const fmt = (n: number) => `⁦${n.toLocaleString('fr-DZ').replace(/ | /g, ' ')}⁩`;
-export const da = (n: number) => `${fmt(n)} د.ج`;
+export { da };
 export const boxesLabel = (n: number) => (n === 1 ? 'علبة وحدة' : n === 2 ? 'زوج علب' : `${n} علب`);
 
 const OfferCard = ({ o, active, onSelect, note }: { o: PigmaOffer; active: boolean; onSelect: (id: string) => void; note?: string }) => {

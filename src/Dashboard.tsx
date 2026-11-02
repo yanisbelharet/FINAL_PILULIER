@@ -81,12 +81,16 @@ export default function Dashboard() {
     }
   };
 
-  // Où sont les commandes, d'après la réponse du script (version 2+) ; version 1 : onglet « Commandes » ajouté en bas de la feuille
-  const sheetPlace = (d: any) => (d && d.version >= SHEETS_SCRIPT_VERSION
-    ? `le fichier « ${d.spreadsheet} », onglet « ${d.sheetName} » (${d.rows} commande${d.rows > 1 ? 's' : ''})`
-    : "l'onglet « Commandes » (en bas de la feuille, à côté de « Feuille 1 »)");
+  // Où sont les commandes, d'après la réponse du script (version 3 : un onglet par produit)
+  const sheetPlace = (d: any) => {
+    if (!d || !(d.version >= SHEETS_SCRIPT_VERSION)) return "l'onglet « Commandes » (ancienne version du script, une seule feuille pour tous les produits)";
+    const tabs = Object.entries(d.tabs || {}) as [string, number][];
+    return `le fichier « ${d.spreadsheet} »` + (tabs.length
+      ? `, un onglet par produit : ${tabs.map(([name, n]) => `« ${name} » (${n})`).join(', ')}`
+      : ', un onglet par produit (créé à la première commande)');
+  };
   const oldScriptHint = (d: any) => (d && d.version >= SHEETS_SCRIPT_VERSION ? ''
-    : " — Mettez le script à jour pour que cet onglet passe en premier : étape 1, puis Déployer › Gérer les déploiements › ✏️ › Nouvelle version.");
+    : " — Mettez le script à jour (colonnes du modèle, un onglet par produit, Order ID simple) : étape 1, puis Déployer › Gérer les déploiements › ✏️ › Nouvelle version.");
 
   const testSheetConnection = async () => {
     const res = await fetchAuth('/api/admin/sheets/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
@@ -1321,7 +1325,7 @@ export default function Dashboard() {
                         </div>
                         {config.sheetLink && (
                           <a href={config.sheetLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-emerald-700 hover:underline">
-                            <ExternalLink size={16} /> Ouvrir l'onglet « Commandes »
+                            <ExternalLink size={16} /> Ouvrir la feuille
                           </a>
                         )}
                       </div>

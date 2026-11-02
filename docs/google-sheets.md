@@ -12,7 +12,19 @@ pas de connexion Google à renouveler. Le script ignore les ID déjà présents 
 - `POST /api/admin/sheets/backfill` : envoie l'historique par paquets de 100 (le dashboard enchaîne les appels).
 - `sheetWebhookUrl`, `sheetSecret`, `sheetLink` ne sont jamais renvoyés par la route publique `/api/config`.
 
-Colonnes : ID · N° · Date (heure d'Alger) · Client · Téléphone · Wilaya · Commune · Adresse · Livraison · Produit · Offre · Quantité · Total (DA) · Source.
+Colonnes (version 3 du script) = celles du modèle de la boutique (export YouCan, onglet « Youcan-Orders ») :
+
+| A | B | C | D | E | F | G | H | I | J | K | L |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Order ID | Order date | الاسم الكامل 👤 | رقم الهاتف 📞 | الولاية 🌎 | البلدية 🏠 | سعر التوصيل | التوصيل 🚚 | السعر الاجمالي | confirmation | Livraison | (notes) |
+| `001` | `2026-11-02 21:59:46` | tel que saisi | tel que saisi | tel que reçu du site (`16 - الجزائر`) | tel que reçu | `400 دج` | `التوصيل لباب المنزل` / `التوصيل للمكتب` | `4200 دج` | vide (liste du modèle) | `A DOMICILE` / `STOP DESK` | vide |
+
+- **Un onglet par produit** (`sheetTabFor` dans `api/_sheets.ts`) : « Stop Fuites 1,4 kg », « Stop Fuites 16 kg »,
+  « PROELASTIC », « MagSafe », « منبه الدواء », « منبه الدواء - ليبيا » ; commandes anciennes sans produit : « Autres commandes ».
+  L'onglet est créé à la première commande (en-tête vert, listes déroulantes J et K du modèle, texte libre accepté).
+- **Order ID** : numéro simple attribué par le script, propre à chaque onglet (plus grand numéro de la colonne A + 1, sur 3 chiffres).
+- Colonne **Z masquée** (« ref ») : identifiant de la commande sur le site, sert uniquement à éviter les doublons. Ne pas la supprimer.
+- Livraison = total − prix des produits (0 دج pour les offres à livraison gratuite).
 
 ## Mise en place (dashboard › Intégrations)
 
@@ -23,7 +35,9 @@ Colonnes : ID · N° · Date (heure d'Alger) · Client · Téléphone · Wilaya 
 
 ## Où sont les commandes ?
 
-Dans l'onglet **« Commandes »**. La version 1 du script le créait **à la fin** de la feuille (après « Feuille 1 ») :
+Version 3 : dans l'onglet du produit (voir ci-dessus) ; l'ancien onglet « Commandes » n'est plus utilisé et peut être supprimé.
+
+Historique : la version 1 du script le créait **à la fin** de la feuille (après « Feuille 1 ») :
 les commandes y arrivaient, mais on regardait souvent le premier onglet, vide. La version 2 :
 
 - utilise le premier onglet s'il est vide, sinon crée « Commandes » en première position, et remonte un onglet

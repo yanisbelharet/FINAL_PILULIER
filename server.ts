@@ -511,7 +511,9 @@ const wilayaMap: Record<string, string> = {
       if (!batch.length) return res.json({ ok: true, added: 0, sent: 0, done: true });
       const r = await pushOrdersToSheet(String(config.sheetWebhookUrl), String(config.sheetSecret || ''), batch, 9000);
       if (!r.ok) return res.json({ ...r, sent: 0 });
-      res.json({ ...r, ok: true, added: r.added || 0, sent: batch.length, done: batch.length < 100, next: batch[batch.length - 1].createdAt });
+      const lastCreated: any = snap.docs[snap.docs.length - 1].data().createdAt;
+      const next = typeof lastCreated?.toDate === 'function' ? lastCreated.toDate().toISOString() : new Date(lastCreated).toISOString();
+      res.json({ ...r, ok: true, added: r.added || 0, sent: batch.length, done: batch.length < 100, next });
     } catch (error: any) {
       res.status(500).json({ ok: false, error: String(error?.message || error) });
     }
@@ -657,8 +659,8 @@ const wilayaMap: Record<string, string> = {
         // Google Sheets (serveur long : envoi en arrière-plan, sans bloquer la commande)
         if (configData.sheetWebhookUrl) {
           pushOrdersToSheet(configData.sheetWebhookUrl, configData.sheetSecret || '', [toSheetOrder(orderRef.id, {
-            name, phone, wilaya: wilaya || city, commune: commune || address, address, deliveryType, price, productName, bundleTitle,
-            quantity, source, displayId, createdAt: new Date().toISOString(),
+            name, phone, wilaya: wilaya || city, commune: commune || address, deliveryType, price, productTotal, productId, productName,
+            currency: isLibya ? 'LYD' : 'DZD', country: isLibya ? 'Libya' : 'Algeria', createdAt: new Date().toISOString(),
           })]).then(r => { if (!r.ok) console.error("[SHEETS] Error:", r.error); });
         }
       } catch (err) {

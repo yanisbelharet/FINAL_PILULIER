@@ -36,7 +36,8 @@ export function toSheetOrder(id: string, o: any): SheetOrder {
   };
 }
 
-export type SheetResult = { ok: boolean; added?: number; sheetUrl?: string; error?: string };
+// version, spreadsheet, sheetName, rows : renvoyés par le script à partir de la version 2 (absents avec la version 1)
+export type SheetResult = { ok: boolean; added?: number; sheetUrl?: string; error?: string; version?: number; spreadsheet?: string; sheetName?: string; rows?: number };
 
 export async function pushOrdersToSheet(url: string, secret: string, orders: SheetOrder[], timeoutMs = 15000): Promise<SheetResult> {
   if (!url || !/^https:\/\/script\.google(usercontent)?\.com\//.test(url)) return { ok: false, error: "URL du script invalide (elle doit commencer par https://script.google.com/)" };
@@ -60,7 +61,7 @@ export async function pushOrdersToSheet(url: string, secret: string, orders: She
         : `Réponse inattendue du script (HTTP ${res.status}). Vérifiez l'URL /exec.` };
     }
     if (!data.ok) return { ok: false, error: data.error === 'secret' ? 'Code secret incorrect : recopiez le script depuis le dashboard.' : (data.error || 'Erreur du script') };
-    return { ok: true, added: Number(data.added) || 0, sheetUrl: data.sheetUrl };
+    return { ok: true, added: Number(data.added) || 0, sheetUrl: data.sheetUrl, version: data.version, spreadsheet: data.spreadsheet, sheetName: data.sheetName, rows: data.rows };
   } catch (err: any) {
     return { ok: false, error: err?.name === 'AbortError' ? 'Le script Google ne répond pas (délai dépassé).' : String(err?.message || err) };
   } finally {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Lock, Settings, Save, LogOut, TrendingUp, Users, ShoppingCart, ShoppingBag, Tag, Eye, Package, DollarSign, LayoutDashboard, BarChart3, Bell, Clock, Plane, Phone, CheckCircle, XCircle, Search, RefreshCw, AlertCircle, MapPin, Shield, Ban, Globe, Copy, ExternalLink, Upload } from 'lucide-react';
 import * as import_data from './data';
 import { motion } from 'motion/react';
-import { buildAppsScript } from './sheetsAppsScript';
+import { buildAppsScript, SHEETS_SCRIPT_VERSION } from './sheetsAppsScript';
 
 export default function Dashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -81,6 +81,13 @@ export default function Dashboard() {
     }
   };
 
+  // Où sont les commandes, d'après la réponse du script (version 2+) ; version 1 : onglet « Commandes » ajouté en bas de la feuille
+  const sheetPlace = (d: any) => (d && d.version >= SHEETS_SCRIPT_VERSION
+    ? `le fichier « ${d.spreadsheet} », onglet « ${d.sheetName} » (${d.rows} commande${d.rows > 1 ? 's' : ''})`
+    : "l'onglet « Commandes » (en bas de la feuille, à côté de « Feuille 1 »)");
+  const oldScriptHint = (d: any) => (d && d.version >= SHEETS_SCRIPT_VERSION ? ''
+    : " — Mettez le script à jour pour que cet onglet passe en premier : étape 1, puis Déployer › Gérer les déploiements › ✏️ › Nouvelle version.");
+
   const testSheetConnection = async () => {
     const res = await fetchAuth('/api/admin/sheets/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     const data = await res.json().catch(() => ({ ok: false, error: 'Réponse invalide du serveur' }));
@@ -103,7 +110,7 @@ export default function Dashboard() {
       setConfig((c: any) => ({ ...c, sheetWebhookUrl: url }));
       const test = await testSheetConnection();
       setSheetMessage(test.ok
-        ? { type: 'success', text: 'Feuille connectée ! Chaque nouvelle commande y sera ajoutée automatiquement.' }
+        ? { type: 'success', text: `Feuille connectée ! Les commandes arrivent dans ${sheetPlace(test)}.${oldScriptHint(test)}` }
         : { type: 'error', text: 'URL enregistrée mais le test a échoué : ' + test.error });
       if (test.ok) setSheetUrlInput('');
     } catch (err: any) {
@@ -117,7 +124,7 @@ export default function Dashboard() {
     setSheetBusy('test');
     setSheetMessage(null);
     const test = await testSheetConnection();
-    setSheetMessage(test.ok ? { type: 'success', text: 'La liaison fonctionne.' } : { type: 'error', text: test.error || 'Échec du test' });
+    setSheetMessage(test.ok ? { type: 'success', text: `La liaison fonctionne. Les commandes sont dans ${sheetPlace(test)}.${oldScriptHint(test)}` } : { type: 'error', text: test.error || 'Échec du test' });
     setSheetBusy(null);
   };
 
@@ -127,6 +134,7 @@ export default function Dashboard() {
     setSheetMessage(null);
     let after: string | undefined;
     let sent = 0, added = 0;
+    let last: any = null;
     try {
       for (let i = 0; i < 500; i++) {
         const res = await fetchAuth('/api/admin/sheets/backfill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ after }) });
@@ -134,11 +142,13 @@ export default function Dashboard() {
         if (!data.ok) throw new Error(data.error || 'Erreur');
         sent += data.sent || 0;
         added += data.added || 0;
+        if (data.sheetName || data.sheetUrl) last = data;
         setSheetMessage({ type: 'success', text: `Envoi en cours… ${sent} commandes vérifiées, ${added} ajoutées.` });
         if (data.done || !data.next) break;
         after = data.next;
       }
-      setSheetMessage({ type: 'success', text: `Terminé : ${sent} commandes vérifiées, ${added} ajoutées (les autres étaient déjà dans la feuille).` });
+      if (last?.sheetUrl) setConfig((c: any) => ({ ...c, sheetLink: last.sheetUrl }));
+      setSheetMessage({ type: 'success', text: `Terminé : ${sent} commandes vérifiées, ${added} ajoutées (les autres étaient déjà dans la feuille). Elles sont dans ${sheetPlace(last)}.${oldScriptHint(last)}` });
     } catch (err: any) {
       setSheetMessage({ type: 'error', text: `Arrêté après ${sent} commandes : ${err.message}` });
     } finally {
@@ -1311,7 +1321,7 @@ export default function Dashboard() {
                         </div>
                         {config.sheetLink && (
                           <a href={config.sheetLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-emerald-700 hover:underline">
-                            <ExternalLink size={16} /> Ouvrir la feuille
+                            <ExternalLink size={16} /> Ouvrir l'onglet « Commandes »
                           </a>
                         )}
                       </div>
@@ -1341,6 +1351,10 @@ export default function Dashboard() {
                           <li>Exécuter en tant que : <b>Moi</b> — Qui a accès : <b>Tout le monde</b> › Déployer, puis autorisez l'accès.</li>
                           <li>Copiez l'<b>URL de l'application Web</b> (elle finit par <code>/exec</code>).</li>
                         </ol>
+                        <p className="mt-3 text-xs text-slate-500 bg-slate-50 rounded-lg p-2.5">
+                          <b>Script déjà installé ?</b> Pour le mettre à jour : recopiez-le (étape 1), collez-le à la place de l'ancien, puis
+                          Déployer › Gérer les déploiements › ✏️ › Version : <b>Nouvelle version</b> › Déployer. L'URL ne change pas.
+                        </p>
                       </li>
                       <li className="rounded-2xl border border-slate-200 p-5">
                         <p className="font-bold text-slate-800 mb-3">3. Collez l'URL ici</p>

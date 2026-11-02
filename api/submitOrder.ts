@@ -121,19 +121,28 @@ export default async function handler(req, res) {
 
     const configData: any = await configPromise;
 
-    // Google Sheets : envoi en arrière-plan (waitUntil), la réponse au client n'attend pas le script Google
+    // Google Sheets : envoi lancé tout de suite, en parallèle de Telegram et TikTok.
+    // Avant de répondre, on l'attend au plus SHEET_WAIT_MS (sinon Vercel peut couper la fonction avant la fin de l'envoi) ;
+    // waitUntil prolonge la fonction au-delà quand le runtime le permet.
+    let sheetPromise: Promise<unknown> | null = null;
     if (orderId && configData.sheetWebhookUrl) {
-      waitUntil(
-        pushOrdersToSheet(configData.sheetWebhookUrl, configData.sheetSecret || '', [toSheetOrder(orderId, { ...orderData, createdAt: new Date().toISOString() })])
-          .then(r => { if (!r.ok) console.error("[SHEETS] Error:", r.error); })
-      );
+      sheetPromise = pushOrdersToSheet(configData.sheetWebhookUrl, configData.sheetSecret || '', [toSheetOrder(orderId, { ...orderData, createdAt: new Date().toISOString() })])
+        .then(r => { if (!r.ok) console.error("[SHEETS] Error:", r.error); })
+        .catch(err => console.error("[SHEETS] Error:", err));
+      waitUntil(sheetPromise);
     }
+    const SHEET_WAIT_MS = 4000;
+    const sheetStart = Date.now();
+    const settleSheet = () => sheetPromise
+      ? Promise.race([sheetPromise, new Promise(r => setTimeout(r, Math.max(0, SHEET_WAIT_MS - (Date.now() - sheetStart))))])
+      : Promise.resolve();
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
 
     if (!botToken || !chatId) {
       console.warn("Telegram credentials not configured. Order received but not sent to Telegram.");
+      await settleSheet();
       return res.status(200).json({ success: true, warning: "Telegram not configured" });
     }
 
@@ -154,6 +163,7 @@ export default async function handler(req, res) {
     if (!response.ok) {
       const errorData = await response.json();
       console.error("Telegram API Error:", errorData);
+      await settleSheet();
       return res.status(500).json({ success: false, error: "Failed to send to Telegram" });
     }
 
@@ -241,6 +251,7 @@ export default async function handler(req, res) {
       console.error("[TIKTOK CAPI] Error:", ttErr);
     }
 
+    await settleSheet();
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error("Order processing error:", error);

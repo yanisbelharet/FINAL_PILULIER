@@ -21,6 +21,22 @@ Colonnes : ID · N° · Date (heure d'Alger) · Client · Téléphone · Wilaya 
    *Exécuter en tant que : Moi*, *Qui a accès : Tout le monde* ; autoriser ; copier l'URL `…/exec`.
 3. Coller l'URL › **Enregistrer et tester**, puis **Envoyer toutes les commandes existantes**.
 
+## Où sont les commandes ?
+
+Dans l'onglet **« Commandes »**. La version 1 du script le créait **à la fin** de la feuille (après « Feuille 1 ») :
+les commandes y arrivaient, mais on regardait souvent le premier onglet, vide. La version 2 :
+
+- utilise le premier onglet s'il est vide, sinon crée « Commandes » en première position, et remonte un onglet
+  « Commandes » existant en premier ;
+- renvoie le nom du fichier, de l'onglet et le nombre de commandes (affichés par le dashboard après un test ou un envoi) ;
+- répond à l'ouverture de l'URL `/exec` dans le navigateur (`doGet`) avec ces mêmes informations, sans données client.
+
+Mettre à jour le script : dashboard › Copier le script, le coller à la place de l'ancien, puis Déployer › Gérer les
+déploiements › ✏️ › Version : Nouvelle version › Déployer. L'URL ne change pas.
+
+Nouvelles commandes : `api/submitOrder.ts` lance l'envoi dès l'enregistrement et l'attend au plus 4 s avant de répondre
+au client (en plus de `waitUntil`), pour que Vercel ne coupe pas la fonction avant la fin de l'envoi.
+
 ## Dépannage
 
 | Message | Cause |

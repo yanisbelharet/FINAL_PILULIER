@@ -511,7 +511,7 @@ const wilayaMap: Record<string, string> = {
       if (!batch.length) return res.json({ ok: true, added: 0, sent: 0, done: true });
       const r = await pushOrdersToSheet(String(config.sheetWebhookUrl), String(config.sheetSecret || ''), batch, 9000);
       if (!r.ok) return res.json({ ...r, sent: 0 });
-      res.json({ ok: true, added: r.added || 0, sent: batch.length, done: batch.length < 100, next: batch[batch.length - 1].createdAt });
+      res.json({ ...r, ok: true, added: r.added || 0, sent: batch.length, done: batch.length < 100, next: batch[batch.length - 1].createdAt });
     } catch (error: any) {
       res.status(500).json({ ok: false, error: String(error?.message || error) });
     }

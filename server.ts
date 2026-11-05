@@ -863,9 +863,10 @@ const wilayaMap: Record<string, string> = {
       // -----------------------------
 
       const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      const chatId = process.env.TELEGRAM_CHAT_ID;
+      // Un ou plusieurs destinataires séparés par des virgules (ex. vous + un groupe : "123456789,-1001234567890")
+      const chatIds = String(process.env.TELEGRAM_CHAT_ID || '').split(',').map(s => s.trim()).filter(Boolean);
 
-      if (!botToken || !chatId) {
+      if (!botToken || !chatIds.length) {
         console.warn("Telegram credentials not configured. Order received but not sent to Telegram.");
         // We still return success to the user so they don't see an error if the owner hasn't set up the bot yet
         return res.json({ success: true, warning: "Telegram not configured" });
@@ -880,21 +881,22 @@ const wilayaMap: Record<string, string> = {
         text = `🛒 *طلبية جديدة #${displayId}!*\n🕒 *التاريخ والوقت:* ${dateStr}\n📦 *الكمية:* ${quantity || 1}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}${address && address !== commune ? `\n🏠 *العنوان:* ${String(address).replace(/[_*`\[\]]/g, ' ')}` : ''}${bundleTitle ? `\n🎁 *العرض:* ${String(bundleTitle).replace(/[_*`\[\]]/g, ' ')}` : ''}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
       }
 
-      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: text,
-          parse_mode: "Markdown"
-        }),
-      });
+      const sent = await Promise.all(chatIds.map(async chatId => {
+        try {
+          const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" }),
+          });
+          if (!response.ok) console.error(`Telegram API Error (chat ${chatId}):`, await response.json().catch(() => null));
+          return response.ok;
+        } catch (err) {
+          console.error(`Telegram fetch error (chat ${chatId}):`, err);
+          return false;
+        }
+      }));
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Telegram API Error:", errorData);
+      if (!sent.some(Boolean)) {
         return res.status(500).json({ success: false, error: "Failed to send to Telegram" });
       }
 

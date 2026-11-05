@@ -79,9 +79,10 @@ export default async function handler(req, res) {
       : Promise.resolve();
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
+    // Un ou plusieurs destinataires séparés par des virgules (ex. vous + un groupe : "123456789,-1001234567890")
+    const chatIds = String(process.env.TELEGRAM_CHAT_ID || '').split(',').map(s => s.trim()).filter(Boolean);
 
-    if (!botToken || !chatId) {
+    if (!botToken || !chatIds.length) {
       console.warn("Telegram credentials not configured. Order received but not sent to Telegram.");
       await settleSheet();
       return res.status(200).json({ success: true, warning: "Telegram not configured" });
@@ -89,21 +90,22 @@ export default async function handler(req, res) {
 
     const text = `🛒 *طلبية جديدة!*\n📦 *الكمية:* ${quantity || 1}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج`;
 
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: text,
-        parse_mode: "Markdown"
-      }),
-    });
+    const sent = await Promise.all(chatIds.map(async chatId => {
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" }),
+        });
+        if (!response.ok) console.error(`Telegram API Error (chat ${chatId}):`, await response.json().catch(() => null));
+        return response.ok;
+      } catch (err) {
+        console.error(`Telegram fetch error (chat ${chatId}):`, err);
+        return false;
+      }
+    }));
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Telegram API Error:", errorData);
+    if (!sent.some(Boolean)) {
       await settleSheet();
       return res.status(500).json({ success: false, error: "Failed to send to Telegram" });
     }

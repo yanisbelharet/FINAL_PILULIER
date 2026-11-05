@@ -16,7 +16,7 @@ export const DELIVERY_PRICES: Record<string, { desk: number, home: number }> = {
   "13 - تلمسان": { desk: 400, home: 600 },
   "14 - تيارت": { desk: 400, home: 600 },
   "15 - تيزي وزو": { desk: 400, home: 600 },
-  "16 - الجزائر": { desk: 300, home: 500 },
+  "16 - الجزائر": { desk: 300, home: 450 },
   "17 - الجلفة": { desk: 400, home: 700 },
   "18 - جيجل": { desk: 400, home: 600 },
   "19 - سطيف": { desk: 400, home: 600 },

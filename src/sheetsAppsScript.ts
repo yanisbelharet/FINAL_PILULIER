@@ -3,7 +3,7 @@
 // avec les colonnes du modèle de la boutique (export YouCan) + « الكمية », et tient à jour un onglet « Statistiques ».
 // SHEETS_SCRIPT_VERSION : le dashboard compare avec la version renvoyée par le script installé.
 // Attention : ce code est un gabarit (template literal) : pas de backtick, pas de « ${ », pas d'antislash dans le script.
-export const SHEETS_SCRIPT_VERSION = 4;
+export const SHEETS_SCRIPT_VERSION = 5;
 
 export const buildAppsScript = (secret: string) => `// YANIS SHOP → Google Sheets (version ${SHEETS_SCRIPT_VERSION})
 // Collez ce code dans Extensions > Apps Script de votre feuille, puis :
@@ -269,31 +269,38 @@ function ensureStats() {
   const dzd = []; // colonnes en dinars algériens (le total des montants exclut la Libye)
   tabs.forEach(function (name, i) { if (name.indexOf('ليبيا') < 0) dzd.push(colLetter(3 + i)); });
   const lastLetter = colLetter(2 + Math.max(tabs.length, 1));
+  // Tout le tableau est écrit en quelques appels groupés (un appel par cellule dépasserait le délai de réponse)
+  const width = tabs.length + 1; // Total + produits
+  const labels = [], formulas = [], formats = [], backgrounds = [], weights = [];
   STAT_ROWS.forEach(function (def, idx) {
     const r = TOP + 1 + idx;
     const type = def[1];
-    sh.getRange(r, 1).setValue(def[0]);
-    const cell = function (col) { return colLetter(col) + r; };
     const rate = function (col) { const a = colLetter(col) + (TOP + 1 + def[2][0]), b = colLetter(col) + (TOP + 1 + def[2][1]); return '=IFERROR(' + a + '/' + b + ',0)'; };
     const other = function (col) { const L = colLetter(col); return '=' + L + (TOP + 1) + '-' + L + (TOP + 2) + '-SUM(' + L + (TOP + 11) + ',' + L + (TOP + 13) + ':' + L + (TOP + 17) + ')'; };
-    tabs.forEach(function (name, i) {
-      const col = 3 + i;
-      sh.getRange(cell(col)).setFormula(type === 'r' ? rate(col) : type === 'other' ? other(col) : statFormula(name, type, def[2]));
-    });
     let total;
     if (type === 'r') total = rate(2);
     else if (type === 'other') total = other(2);
     else if (type === 'ca') total = dzd.length ? '=SUM(' + dzd.map(function (L) { return L + r; }).join(',') + ')' : '=0';
     else total = tabs.length ? '=SUM(C' + r + ':' + lastLetter + r + ')' : '=0';
-    sh.getRange(r, 2).setFormula(total);
-    const range = sh.getRange(r, 2, 1, Math.max(tabs.length, 0) + 1);
-    if (type === 'r') { range.setNumberFormat('0.0%'); sh.getRange(r, 1, 1, header.length).setBackground('#d9ead3').setFontWeight('bold'); }
-    else if (type === 'ca') range.setNumberFormat('#,##0" دج"');
-    else range.setNumberFormat('0');
+    const line = [total];
+    tabs.forEach(function (name, i) {
+      const col = 3 + i;
+      line.push(type === 'r' ? rate(col) : type === 'other' ? other(col) : statFormula(name, type, def[2]));
+    });
+    labels.push([def[0]]);
+    formulas.push(line);
+    const f = type === 'r' ? '0.0%' : type === 'ca' ? '#,##0" دج"' : '0';
+    formats.push(line.map(function () { return f; }));
+    const bg = type === 'r' ? '#d9ead3' : null;
+    backgrounds.push([bg].concat(line.map(function () { return bg; })));
+    weights.push([type === 'r' ? 'bold' : 'normal', 'bold'].concat(tabs.map(function () { return type === 'r' ? 'bold' : 'normal'; })));
   });
-  sh.getRange(TOP + 1, 2, STAT_ROWS.length, 1).setFontWeight('bold');
+  const n = STAT_ROWS.length;
+  sh.getRange(TOP + 1, 1, n, 1).setValues(labels);
+  sh.getRange(TOP + 1, 2, n, width).setFormulas(formulas).setNumberFormats(formats);
+  sh.getRange(TOP + 1, 1, n, width + 1).setBackgrounds(backgrounds).setFontWeights(weights);
   sh.setColumnWidth(1, 330);
-  for (let c = 2; c <= header.length; c++) sh.setColumnWidth(c, 120);
+  sh.setColumnWidths(2, width, 120);
   sh.setFrozenRows(TOP);
   sh.setFrozenColumns(1);
   sh.getRange('Z1').setValue(signature);

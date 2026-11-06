@@ -488,7 +488,7 @@ const wilayaMap: Record<string, string> = {
   app.post("/api/admin/sheets/test", authMiddleware, async (req, res) => {
     try {
       const config: any = await getConfig();
-      const r = await pushOrdersToSheet(String(config.sheetWebhookUrl || ''), String(config.sheetSecret || ''), [], 9000);
+      const r = await pushOrdersToSheet(String(config.sheetWebhookUrl || ''), String(config.sheetSecret || ''), [], 25000);
       if (r.ok && r.sheetUrl && r.sheetUrl !== config.sheetLink) await setDoc(doc(db, "config", "main"), { sheetLink: r.sheetUrl }, { merge: true });
       res.json(r);
     } catch (error: any) {
@@ -509,7 +509,7 @@ const wilayaMap: Record<string, string> = {
       const snap = await getDocs(q);
       const batch = snap.docs.map(d => toSheetOrder(d.id, d.data()));
       if (!batch.length) return res.json({ ok: true, added: 0, sent: 0, done: true });
-      const r = await pushOrdersToSheet(String(config.sheetWebhookUrl), String(config.sheetSecret || ''), batch, 9000);
+      const r = await pushOrdersToSheet(String(config.sheetWebhookUrl), String(config.sheetSecret || ''), batch, 25000);
       if (!r.ok) return res.json({ ...r, sent: 0 });
       const lastCreated: any = snap.docs[snap.docs.length - 1].data().createdAt;
       const next = typeof lastCreated?.toDate === 'function' ? lastCreated.toDate().toISOString() : new Date(lastCreated).toISOString();

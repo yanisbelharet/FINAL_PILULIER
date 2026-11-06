@@ -12,12 +12,22 @@ pas de connexion Google à renouveler. Le script ignore les ID déjà présents 
 - `POST /api/admin/sheets/backfill` : envoie l'historique par paquets de 100 (le dashboard enchaîne les appels).
 - `sheetWebhookUrl`, `sheetSecret`, `sheetLink` ne sont jamais renvoyés par la route publique `/api/config`.
 
-Colonnes (version 3 du script) = celles du modèle de la boutique (export YouCan, onglet « Youcan-Orders ») :
+Colonnes (version 4 du script) = celles du modèle de la boutique (export YouCan) + « الكمية » après « التوصيل » :
 
-| A | B | C | D | E | F | G | H | I | J | K | L |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| Order ID | Order date | الاسم الكامل 👤 | رقم الهاتف 📞 | الولاية 🌎 | البلدية 🏠 | سعر التوصيل | التوصيل 🚚 | السعر الاجمالي | confirmation | Livraison | (notes) |
-| `001` | `2026-11-02 21:59:46` | tel que saisi | tel que saisi | tel que reçu du site (`16 - الجزائر`) | tel que reçu | `400 دج` | `التوصيل لباب المنزل` / `التوصيل للمكتب` | `4200 دج` | vide (liste du modèle) | `A DOMICILE` / `STOP DESK` | vide |
+| A | B | C | D | E | F | G | H | I | J | K | L | M |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Order ID | Order date | الاسم الكامل 👤 | رقم الهاتف 📞 | الولاية 🌎 | البلدية 🏠 | سعر التوصيل | التوصيل 🚚 | الكمية 📦 | السعر الاجمالي | confirmation | Livraison | (notes) |
+| `001` | `2026-11-02 21:59:46` | tel que saisi | tel que saisi | tel que reçu du site (`16 - الجزائر`) | tel que reçu | `450 دج` | `التوصيل لباب المنزل` / `التوصيل للمكتب` | `1`, `2+1`, `4+2` (Stop Fuites), sinon la quantité | `4250 دج` | vide (liste du modèle) | `A DOMICILE` / `STOP DESK` | vide |
+
+- La quantité est envoyée à part (`qty`, `qtyLabel` dans `api/_sheets.ts`) : un script v3 l'ignore et garde ses 12 colonnes.
+- Un onglet créé par la v3 reçoit la colonne « الكمية » (insérée après H) à la première commande ; « Envoyer toutes les
+  commandes existantes » remplit la quantité des lignes déjà présentes.
+- Onglet **« Statistiques »** (formules, recalculées par Google Sheets) : période au choix en B3 (aujourd'hui, hier,
+  hier + aujourd'hui, 7/30 jours, ce mois, mois dernier, tout, dates choisies en B4/B5) ; une colonne par produit + Total ;
+  commandes reçues/confirmées/expédiées/livrées, taux de confirmation (confirmées ÷ reçues), d'expédition (expédiées ÷
+  confirmées), de livraison (livrées ÷ expédiées), d'annulation, pièces (2+1 = 3), annulées, reportées, injoignables,
+  en attente, risque élevé, non traitées, autres statuts, domicile / Stop Desk, montants. Recréé quand un onglet produit
+  apparaît (la période choisie est gardée). Les dates comparées sont celles de la colonne « Order date » (heure d'Alger).
 
 - **Un onglet par produit** (`sheetTabFor` dans `api/_sheets.ts`) : « Stop Fuites 1,4 kg », « Stop Fuites 16 kg »,
   « PROELASTIC », « MagSafe », « منبه الدواء », « منبه الدواء - ليبيا » ; commandes anciennes sans produit : « Autres commandes ».

@@ -685,7 +685,7 @@ const wilayaMap: Record<string, string> = {
         // Google Sheets (serveur long : envoi en arrière-plan, sans bloquer la commande)
         if (configData.sheetWebhookUrl) {
           pushOrdersToSheet(configData.sheetWebhookUrl, configData.sheetSecret || '', [toSheetOrder(orderRef.id, {
-            name, phone, wilaya: wilaya || city, commune: commune || address, deliveryType, price, productTotal, productId, productName,
+            name, phone, wilaya: wilaya || city, commune: commune || address, deliveryType, price, productTotal, productId, productName, bundleId, quantity,
             currency: isLibya ? 'LYD' : 'DZD', country: isLibya ? 'Libya' : 'Algeria', createdAt: new Date().toISOString(),
           })]).then(r => { if (!r.ok) console.error("[SHEETS] Error:", r.error); });
         }

@@ -9,7 +9,17 @@ import { DELIVERY_PRICES } from "./_delivery.js";
 // Une commande pour le script : onglet du produit, référence interne (anti-doublon, colonne masquée)
 // et les colonnes B à L du modèle (A « Order ID » est le numéro attribué par le script dans l'onglet) :
 // Order date | الاسم الكامل | رقم الهاتف | الولاية | البلدية | سعر التوصيل | التوصيل | السعر الاجمالي | confirmation | Livraison | (notes)
-export type SheetOrder = { key: string; sheet: string; row: string[] };
+// qty : quantité commandée telle que l'offre la décrit (1, 2+1, 4+2…), colonne « الكمية » ajoutée par le script v4 après « التوصيل ».
+// Envoyée à part pour qu'un script v3 (12 colonnes) continue de fonctionner tant qu'il n'est pas mis à jour.
+export type SheetOrder = { key: string; sheet: string; row: string[]; qty: string };
+
+// Offres Stop Fuites 1,4 kg (src/CheckoutFormPigma.tsx) : boîtes achetées + offertes
+const PIGMA_QTY: Record<string, string> = { pack1: '1', pack3: '2+1', pack6: '4+2', combo7: '4+2+1', combo9: '4+2+2+1' };
+export function qtyLabel(o: any): string {
+  const id = String(o.productId || '');
+  if (id.startsWith('pigma-stop-fuites') && id !== 'pigma-stop-fuites-16kg' && PIGMA_QTY[o.bundleId]) return PIGMA_QTY[o.bundleId];
+  return String(Number(o.quantity) || 1);
+}
 
 const toDate = (v: any): Date => {
   if (!v) return new Date();
@@ -49,6 +59,7 @@ export function toSheetOrder(id: string, o: any): SheetOrder {
   return {
     key: id,
     sheet: sheetTabFor(o),
+    qty: qtyLabel(o),
     row: [
       algiersDate(toDate(o.createdAt)),
       String(o.name || ''),

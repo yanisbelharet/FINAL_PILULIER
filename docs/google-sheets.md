@@ -22,9 +22,9 @@ Colonnes (version 4 du script) = celles du modèle de la boutique (export YouCan
 - La quantité est envoyée à part (`qty`, `qtyLabel` dans `api/_sheets.ts`) : un script v3 l'ignore et garde ses 12 colonnes.
 - Un onglet créé par la v3 reçoit la colonne « الكمية » (insérée après H) à la première commande ; « Envoyer toutes les
   commandes existantes » remplit la quantité des lignes déjà présentes.
-- Onglet **« Statistiques »** (formules, recalculées par Google Sheets) : période au choix en B3 (aujourd'hui, hier,
-  hier + aujourd'hui, 7/30 jours, ce mois, mois dernier, tout, dates choisies en B4/B5) ; une colonne par produit + Total ;
-  commandes reçues/confirmées/expédiées/livrées, taux de confirmation (confirmées ÷ reçues), d'expédition (expédiées ÷
+- Onglet **« Statistiques »** (formules, recalculées par Google Sheets), produit **Stop Fuites 1,4 kg** seulement (`STATS_TABS`) ;
+  séparateur des formules détecté (`,` ou `;` selon les paramètres régionaux de la feuille) : période au choix en B3 (aujourd'hui, hier,
+  hier + aujourd'hui, 7/30 jours, ce mois, mois dernier, tout, dates choisies en B4/B5) ; commandes reçues/confirmées/expédiées/livrées, taux de confirmation (confirmées ÷ reçues), d'expédition (expédiées ÷
   confirmées), de livraison (livrées ÷ expédiées), d'annulation, pièces (2+1 = 3), annulées, reportées, injoignables,
   en attente, risque élevé, non traitées, autres statuts, domicile / Stop Desk, montants. Recréé quand un onglet produit
   apparaît (la période choisie est gardée). Les dates comparées sont celles de la colonne « Order date » (heure d'Alger).

@@ -3,7 +3,7 @@
 // avec les colonnes du modèle de la boutique (export YouCan) + « الكمية », et tient à jour un onglet « Statistiques ».
 // SHEETS_SCRIPT_VERSION : le dashboard compare avec la version renvoyée par le script installé.
 // Attention : ce code est un gabarit (template literal) : pas de backtick, pas de « ${ », pas d'antislash dans le script.
-export const SHEETS_SCRIPT_VERSION = 5;
+export const SHEETS_SCRIPT_VERSION = 6;
 
 export const buildAppsScript = (secret: string) => `// YANIS SHOP → Google Sheets (version ${SHEETS_SCRIPT_VERSION})
 // Collez ce code dans Extensions > Apps Script de votre feuille, puis :
@@ -172,6 +172,9 @@ const S_RISK = ['risque elveé', 'risque elevé', 'risque élevé'];
 
 function q(s) { return '"' + s + '"'; }
 
+// Produits suivis dans l'onglet Statistiques
+const STATS_TABS = ['Stop Fuites 1,4 kg'];
+
 // Lignes du tableau : [libellé, type, paramètre] ; types : n = nombre de commandes, p = pièces, ca = montant, r = taux (ligne a / ligne b)
 const STAT_ROWS = [
   ['Commandes reçues', 'n', null],
@@ -200,16 +203,44 @@ const STAT_ROWS = [
 ];
 const TOP = 8; // ligne d'en-tête du tableau
 
+// Séparateur d'arguments des formules : « , » (réglages anglais) ou « ; » (réglages français…).
+// Les formules sont écrites avec des virgules puis converties (hors textes "…" et noms d'onglets '…').
+let SEP = ',';
+function loc(f) {
+  if (SEP === ',') return f;
+  let out = '', dq = false, sq = false;
+  for (let i = 0; i < f.length; i++) {
+    const c = f[i];
+    if (c === '"' && !sq) dq = !dq;
+    else if (c === "'" && !dq) sq = !sq;
+    out += (c === ',' && !dq && !sq) ? SEP : c;
+  }
+  return out;
+}
+function detectSep(sh) {
+  const probe = sh.getRange('Z2');
+  const seps = [',', ';'];
+  for (let i = 0; i < seps.length; i++) {
+    probe.setFormula('=SUM(1' + seps[i] + '2)');
+    SpreadsheetApp.flush();
+    if (probe.getValue() === 3) { probe.clearContent(); return seps[i]; }
+  }
+  probe.clearContent();
+  return ',';
+}
+
 // Formule d'une cellule pour l'onglet produit « name »
 function statFormula(name, type, param) {
   const t = "'" + name.replace(/'/g, "''") + "'!";
-  const inPeriod = '(LEFT(' + t + 'B2:B,10)>=$Z$3)*(LEFT(' + t + 'B2:B,10)<=$Z$4)*(LEN(' + t + 'A2:A)>0)';
+  // jour de la commande (colonne Order date « 2026-11-05 21:59:46 ») comparé aux dates E3 / E4
+  const day = 'IFERROR(DATE(VALUE(LEFT(' + t + 'B2:B,4)),VALUE(MID(' + t + 'B2:B,6,2)),VALUE(MID(' + t + 'B2:B,9,2))),0)';
+  const inPeriod = '(' + day + '>=$E$3)*(' + day + '<=$E$4)*(LEN(' + t + 'A2:A)>0)';
   const st = 'LOWER(TRIM(' + t + 'K2:K))';
   let cond = '1';
   if (param === 'untreated') cond = '((' + st + '="")+(' + st + '="non validé")>0)';
   else if (param === 'home') cond = '(UPPER(TRIM(' + t + 'L2:L))="A DOMICILE")';
   else if (param === 'desk') cond = '(UPPER(TRIM(' + t + 'L2:L))="STOP DESK")';
-  else if (param) cond = 'ISNUMBER(MATCH(' + st + ',{' + param.map(q).join(',') + '},0))';
+  else if (param) cond = '((' + param.map(function (v) { return '(' + st + '=' + q(v) + ')'; }).join('+') + ')>0)';
   let value = '1';
   if (type === 'p') {
     // « 4+2+1 » → 7 pièces (jusqu'à 4 nombres)
@@ -228,10 +259,11 @@ function colLetter(c) {
   return s;
 }
 
-// Crée ou met à jour l'onglet Statistiques quand la liste des onglets produits change (la période choisie est conservée)
+// Crée ou met à jour l'onglet Statistiques (la période choisie est conservée)
 function ensureStats() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tabs = orderTabs().map(function (s) { return s.getName(); });
+  const present = orderTabs().map(function (s) { return s.getName(); });
+  const tabs = STATS_TABS.filter(function (n) { return present.indexOf(n) >= 0; });
   const signature = 'v' + VERSION + ':' + JSON.stringify(tabs);
   let sh = ss.getSheetByName(STATS);
   if (sh && sh.getRange('Z1').getValue() === signature) return;
@@ -246,63 +278,54 @@ function ensureStats() {
   } else {
     sh = ss.insertSheet(STATS, 0);
   }
+  SEP = detectSep(sh);
 
-  sh.getRange('A1').setValue('📊 Statistiques des commandes').setFontWeight('bold').setFontSize(14);
+  sh.getRange('A1').setValue('📊 Statistiques — ' + STATS_TABS.join(', ')).setFontWeight('bold').setFontSize(14);
   sh.getRange('A3:A5').setValues([['Période'], ['Du (si « Dates choisies »)'], ['Au (si « Dates choisies »)']]).setFontWeight('bold');
   sh.getRange('B3').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(PERIODS.map(function (p) { return p[0]; }), true).build()).setValue(period).setBackground('#fff2cc').setFontWeight('bold');
   sh.getRange('B4:B5').setDataValidation(SpreadsheetApp.newDataValidation().requireDate().build()).setNumberFormat('dd/mm/yyyy').setBackground('#fff2cc');
   sh.getRange('B4').setValue(from);
   sh.getRange('B5').setValue(to);
-  // Début et fin de la période (dates) ; Z3/Z4 : mêmes dates en texte « 2026-11-05 », comparées à la colonne Order date
+  // Début et fin de la période
   const sw = function (i) { return '=SWITCH($B$3,' + PERIODS.map(function (p) { return q(p[0]) + ',' + p[i]; }).join(',') + ',TODAY())'; };
   sh.getRange('D3:D4').setValues([['Du'], ['Au']]).setFontWeight('bold');
-  sh.getRange('E3').setFormula(sw(1));
-  sh.getRange('E4').setFormula(sw(2));
-  sh.getRange('E3:E4').setNumberFormat('dd/mm/yyyy');
-  sh.getRange('Z3').setFormula('=TEXT(E3,"yyyy-mm-dd")');
-  sh.getRange('Z4').setFormula('=TEXT(E4,"yyyy-mm-dd")');
+  sh.getRange('E3').setFormula(loc(sw(1)));
+  sh.getRange('E4').setFormula(loc(sw(2)));
+  sh.getRange('E3:E4').setNumberFormat('dd/mm/yyyy').setFontWeight('bold');
   sh.getRange('A6').setValue('Confirmées = Confirmé, Validé par tel, Expedié, Livré · Expédiées = Expedié, Livré · Pièces : 2+1 = 3 · Montants : colonne « السعر الاجمالي » (livraison comprise)').setFontColor('#666666');
 
-  // En-tête : Indicateur | Total | un produit par colonne
-  const header = ['Indicateur', 'Total'].concat(tabs);
-  sh.getRange(TOP, 1, 1, header.length).setValues([header]).setFontWeight('bold').setBackground('#6aa84f').setWrap(true);
-  const dzd = []; // colonnes en dinars algériens (le total des montants exclut la Libye)
-  tabs.forEach(function (name, i) { if (name.indexOf('ليبيا') < 0) dzd.push(colLetter(3 + i)); });
-  const lastLetter = colLetter(2 + Math.max(tabs.length, 1));
-  // Tout le tableau est écrit en quelques appels groupés (un appel par cellule dépasserait le délai de réponse)
-  const width = tabs.length + 1; // Total + produits
-  const labels = [], formulas = [], formats = [], backgrounds = [], weights = [];
-  STAT_ROWS.forEach(function (def, idx) {
-    const r = TOP + 1 + idx;
-    const type = def[1];
-    const rate = function (col) { const a = colLetter(col) + (TOP + 1 + def[2][0]), b = colLetter(col) + (TOP + 1 + def[2][1]); return '=IFERROR(' + a + '/' + b + ',0)'; };
-    const other = function (col) { const L = colLetter(col); return '=' + L + (TOP + 1) + '-' + L + (TOP + 2) + '-SUM(' + L + (TOP + 11) + ',' + L + (TOP + 13) + ':' + L + (TOP + 17) + ')'; };
-    let total;
-    if (type === 'r') total = rate(2);
-    else if (type === 'other') total = other(2);
-    else if (type === 'ca') total = dzd.length ? '=SUM(' + dzd.map(function (L) { return L + r; }).join(',') + ')' : '=0';
-    else total = tabs.length ? '=SUM(C' + r + ':' + lastLetter + r + ')' : '=0';
-    const line = [total];
-    tabs.forEach(function (name, i) {
-      const col = 3 + i;
-      line.push(type === 'r' ? rate(col) : type === 'other' ? other(col) : statFormula(name, type, def[2]));
+  if (!tabs.length) {
+    sh.getRange(TOP, 1).setValue("L'onglet « " + STATS_TABS.join(', ') + ' » sera analysé dès sa première commande.');
+  } else {
+    // En-tête : Indicateur | un produit par colonne ; tout le tableau en quelques appels groupés
+    const header = ['Indicateur'].concat(tabs);
+    sh.getRange(TOP, 1, 1, header.length).setValues([header]).setFontWeight('bold').setBackground('#6aa84f').setWrap(true);
+    const width = tabs.length;
+    const labels = [], formulas = [], formats = [], backgrounds = [], weights = [];
+    STAT_ROWS.forEach(function (def) {
+      const type = def[1];
+      const rate = function (col) { const a = colLetter(col) + (TOP + 1 + def[2][0]), b = colLetter(col) + (TOP + 1 + def[2][1]); return '=IFERROR(' + a + '/' + b + ',0)'; };
+      const other = function (col) { const L = colLetter(col); return '=' + L + (TOP + 1) + '-' + L + (TOP + 2) + '-SUM(' + L + (TOP + 11) + ',' + L + (TOP + 13) + ':' + L + (TOP + 17) + ')'; };
+      const line = tabs.map(function (name, i) {
+        const col = 2 + i;
+        return loc(type === 'r' ? rate(col) : type === 'other' ? other(col) : statFormula(name, type, def[2]));
+      });
+      labels.push([def[0]]);
+      formulas.push(line);
+      const f = type === 'r' ? '0.0%' : type === 'ca' ? '#,##0" دج"' : '0';
+      formats.push(line.map(function () { return f; }));
+      const bg = type === 'r' ? '#d9ead3' : null;
+      backgrounds.push([bg].concat(line.map(function () { return bg; })));
+      weights.push([type === 'r' ? 'bold' : 'normal'].concat(line.map(function () { return 'bold'; })));
     });
-    labels.push([def[0]]);
-    formulas.push(line);
-    const f = type === 'r' ? '0.0%' : type === 'ca' ? '#,##0" دج"' : '0';
-    formats.push(line.map(function () { return f; }));
-    const bg = type === 'r' ? '#d9ead3' : null;
-    backgrounds.push([bg].concat(line.map(function () { return bg; })));
-    weights.push([type === 'r' ? 'bold' : 'normal', 'bold'].concat(tabs.map(function () { return type === 'r' ? 'bold' : 'normal'; })));
-  });
-  const n = STAT_ROWS.length;
-  sh.getRange(TOP + 1, 1, n, 1).setValues(labels);
-  sh.getRange(TOP + 1, 2, n, width).setFormulas(formulas).setNumberFormats(formats);
-  sh.getRange(TOP + 1, 1, n, width + 1).setBackgrounds(backgrounds).setFontWeights(weights);
+    const n = STAT_ROWS.length;
+    sh.getRange(TOP + 1, 1, n, 1).setValues(labels);
+    sh.getRange(TOP + 1, 2, n, width).setFormulas(formulas).setNumberFormats(formats);
+    sh.getRange(TOP + 1, 1, n, width + 1).setBackgrounds(backgrounds).setFontWeights(weights);
+    sh.setColumnWidths(2, width, 160);
+  }
   sh.setColumnWidth(1, 330);
-  sh.setColumnWidths(2, width, 120);
   sh.setFrozenRows(TOP);
-  sh.setFrozenColumns(1);
   sh.getRange('Z1').setValue(signature);
   sh.hideColumns(26);
 }

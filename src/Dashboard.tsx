@@ -92,7 +92,7 @@ export default function Dashboard() {
       : ', un onglet par produit (créé à la première commande)');
   };
   const oldScriptHint = (d: any) => (d && d.version >= SHEETS_SCRIPT_VERSION ? ''
-    : " — Mettez le script à jour (colonne « الكمية » et onglet « Statistiques ») : étape 1, puis Déployer › Gérer les déploiements › ✏️ › Nouvelle version.");
+    : " — Mettez le script à jour (colonne « الكمية » et onglet « Statistiques » Stop Fuites 1,4 kg) : étape 1, puis Déployer › Gérer les déploiements › ✏️ › Nouvelle version.");
 
   const testSheetConnection = async () => {
     const res = await fetchAuth('/api/admin/sheets/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });

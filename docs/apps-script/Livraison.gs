@@ -303,3 +303,29 @@ function livOngletSuivi_(ss) {
   }
   return sh;
 }
+
+// ---------- Envoi immédiat (sans attendre les 5 minutes) ----------
+// À exécuter une fois : envoiInstaller. Ensuite, changer « confirmation », « Société de livraison » ou vider « Envoi »
+// dans la feuille lance l'envoi tout de suite. Menu « 🚚 Livraison › Envoyer les colis maintenant » en plus.
+function envoiInstaller() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'livAuChangement') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('livAuChangement').forSpreadsheet(SpreadsheetApp.getActive()).onEdit().create();
+}
+
+function livAuChangement(e) {
+  const sh = e && e.range && e.range.getSheet();
+  if (!sh || sh.getName() !== LIV_SOURCE) return;
+  const titre = String(sh.getRange(1, e.range.getColumn()).getValue()).trim();
+  if (['confirmation', 'Société de livraison', 'Envoi', 'Réf. produit (stock)', 'Qté produit', 'البلدية 🏠'].indexOf(titre) < 0) return;
+  const lock = LockService.getDocumentLock();
+  if (!lock.tryLock(20000)) return;
+  try {
+    if (livEnvoyer_()) PropertiesService.getScriptProperties().deleteProperty('livSuiviDernier'); // suivi mis à jour au prochain passage
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('🚚 Livraison').addItem('Envoyer les colis maintenant', 'suiviSync').addToUi();
+}

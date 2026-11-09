@@ -225,7 +225,7 @@ function livColonnes_(entetes) {
 
 // Statut simplifié : En acheminement, En livraison, Reporté, Livré, Retour, Annulé
 function livStatut_(code, last) {
-  const s = String(code || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const s = String(code || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (/^retour/.test(s)) return 'Retour';
   if (/annul/.test(s)) return 'Annulé';
   if (/suspendu/.test(s)) return 'Reporté';

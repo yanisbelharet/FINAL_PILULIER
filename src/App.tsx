@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
+import { applyPricing } from './pricing';
 const LandingPage = lazy(() => import('./LandingPage'));
 const LandingPageV2 = lazy(() => import('./LandingPageV2'));
 const LandingPageV3 = lazy(() => import('./LandingPageV3'));
@@ -162,6 +163,7 @@ export default function App() {
         } as any;
 
         setConfig(newConfig);
+        applyPricing(newConfig); // prix de livraison / produits modifiés dans le dashboard
         try {
           localStorage.setItem('site_config_cache', JSON.stringify(newConfig));
         } catch (e) {}

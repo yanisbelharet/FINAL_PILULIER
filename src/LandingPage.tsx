@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { WILAYAS, DELIVERY_PRICES } from './data';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 
+import { usePricing } from './pricing';
 // --- Components ---
 
 const CountdownTimer = ({ hoursVal }: { hoursVal?: number }) => {
@@ -231,6 +232,7 @@ export const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { 
   const navigate = useNavigate();
   const { price: productPrice, oldPrice: productOldPrice } = product;
   const isSubmittingRef = useRef(false);
+  usePricing(); // prix modifiables depuis le dashboard
   const [formData, setFormData] = useState<{
     name: string;
     phone: string;
@@ -251,7 +253,7 @@ export const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { 
 
   useEffect(() => {
     if (formData.wilaya) {
-      import('algeria-locations').then(({ getCommunesByWilayaId }) => {
+      import('./communes').then(({ getCommunesByWilayaId }) => {
         const list = getCommunesByWilayaId(parseInt(formData.wilaya, 10));
         setCommuneList(list || []);
       }).catch(err => {

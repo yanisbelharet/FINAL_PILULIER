@@ -4,11 +4,12 @@ import {
   Calculator, BadgeCheck, MessageCircle, Eye, Layers, CloudRain, Gift, Building2, ArrowLeft,
 } from 'lucide-react';
 import CheckoutFormPigma16, {
-  PIGMA16_PRODUCT, BUCKET_KG, BUCKET_PRICE, PRICE_PER_KG_DISPLAY, M2_PER_KG, M2_PER_BUCKET, MAX_BUCKETS, bucketsLabel,
+  PIGMA16_PRODUCT, BUCKET_KG, bucketPrice, pricePerKgDisplay, M2_PER_KG, M2_PER_BUCKET, MAX_BUCKETS, bucketsLabel,
 } from './CheckoutFormPigma16';
 import { da } from './pigmaFormat';
 import ambianceList from './pigma-ambiance.json';
 
+import { usePricing } from './pricing';
 // Landing grand format : seau de 16 kg (même produit que /lp/pigma-stop-fuites)
 // Étiquette envoyée dans le champ `source` des commandes de cette page
 const SOURCE_TAG = 'LP pigma-16kg';
@@ -117,9 +118,9 @@ const SurfaceDemo = () => (
   </div>
 );
 
-const FAQ = [
+const FAQ = () => [
   { q: 'شحال يغطي السطل؟', a: `كل 1 كلغ يغطي حوالي ${M2_PER_KG} م² بطبقتين. يعني السطل تاع ${BUCKET_KG} كلغ يغطي حوالي ${M2_PER_BUCKET} م². استعمل الحاسبة باش تعرف شحال من سطل يلزمك.` },
-  { q: 'شحال سعر الكلغ؟', a: `السطل ${BUCKET_KG} كلغ بـ ${BUCKET_PRICE.toLocaleString('fr-DZ').replace(/\u202f|\u00a0/g, ' ')} د.ج، يعني أقل من ${PRICE_PER_KG_DISPLAY} د.ج للكلغ، والتوصيل مجاني. أرخص بزاف من العلب الصغيرة.` },
+  { q: 'شحال سعر الكلغ؟', a: `السطل ${BUCKET_KG} كلغ بـ ${bucketPrice().toLocaleString('fr-DZ').replace(/\u202f|\u00a0/g, ' ')} د.ج، يعني أقل من ${pricePerKgDisplay()} د.ج للكلغ، والتوصيل مجاني. أرخص بزاف من العلب الصغيرة.` },
   { q: 'شحال من وقت باش ينشف؟', a: 'طبقة التحضير: 6 ساعات. بين الطبقة الأولى والثانية: 24 ساعة. وما لازمش تطيح الشتا 24 حتى 48 ساعة من بعد الدهان.' },
   { q: 'علاش يبان أبيض كي ندهنو؟', a: 'عادي. كي يتدهن يكون سايل وشوية أبيض كي الحليب، ويولي شفاف وما يبانش غير كي ينشف كامل.' },
   { q: 'على واش نقدر ندهنو؟', a: 'السطح والتيراس، البالكونات، الحيوط والياجور، الكارلاج والفايونس، الحمام وخزانات الماء. لازم السطح يكون نقي، بلا دسم وناشف 100%.' },
@@ -130,6 +131,7 @@ const FAQ = [
 ];
 
 export default function LandingPagePigma16({ config, onPurchase }: { config: any; onPurchase: (p: number, product: any, formData?: any) => void }) {
+  usePricing(); // prix modifiables depuis le dashboard
   const [count, setCount] = useState(1);
   const [area, setArea] = useState(100);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -149,7 +151,7 @@ export default function LandingPagePigma16({ config, onPurchase }: { config: any
 
   // ViewContent (TikTok + Meta) une seule fois dès que les pixels sont prêts
   useEffect(() => {
-    const value = Number((BUCKET_PRICE / rate).toFixed(2));
+    const value = Number((bucketPrice() / rate).toFixed(2));
     const content = { content_id: PIGMA16_PRODUCT.id, content_type: 'product', content_name: PIGMA16_PRODUCT.name };
     const fired = viewFiredRef.current;
     const stopTt = whenReady(() => !!window.ttq, () => {
@@ -168,7 +170,7 @@ export default function LandingPagePigma16({ config, onPurchase }: { config: any
   const trackAddToCart = (n: number) => {
     if (cartFiredRef.current) return;
     cartFiredRef.current = true;
-    const value = Number(((n * BUCKET_PRICE) / rate).toFixed(2));
+    const value = Number(((n * bucketPrice()) / rate).toFixed(2));
     const content = { content_id: PIGMA16_PRODUCT.id, content_type: 'product', content_name: PIGMA16_PRODUCT.name, quantity: n };
     if (window.ttq) window.ttq.track('AddToCart', { contents: [content], value, currency: 'USD' });
     if (window.fbq) window.fbq('track', 'AddToCart', { content_ids: [PIGMA16_PRODUCT.id], content_type: 'product', content_name: PIGMA16_PRODUCT.name, value, currency: 'USD', num_items: n });
@@ -183,7 +185,7 @@ export default function LandingPagePigma16({ config, onPurchase }: { config: any
   const handleFirstInteraction = () => {
     if (checkoutFiredRef.current) return;
     checkoutFiredRef.current = true;
-    const value = Number(((count * BUCKET_PRICE) / rate).toFixed(2));
+    const value = Number(((count * bucketPrice()) / rate).toFixed(2));
     const content = { content_id: PIGMA16_PRODUCT.id, content_type: 'product', content_name: PIGMA16_PRODUCT.name };
     if (window.ttq) window.ttq.track('InitiateCheckout', { contents: [content], value, currency: 'USD' });
     if (window.fbq) window.fbq('track', 'InitiateCheckout', { content_ids: [PIGMA16_PRODUCT.id], content_type: 'product', value, currency: 'USD', num_items: count });
@@ -303,7 +305,7 @@ export default function LandingPagePigma16({ config, onPurchase }: { config: any
             </p>
             <h1 className="mt-3 text-[27px] lg:text-[46px] leading-[1.25] font-black tracking-tight">
               اعزل السطوح الكبيرة<br />
-              بـ <span className="text-[#FFD60A]">{PRICE_PER_KG_DISPLAY} د.ج للكلغ</span>
+              بـ <span className="text-[#FFD60A]">{pricePerKgDisplay()} د.ج للكلغ</span>
             </h1>
           </div>
 
@@ -315,7 +317,7 @@ export default function LandingPagePigma16({ config, onPurchase }: { config: any
               <span className="absolute bottom-8 inset-x-0 text-center text-[10.5px] font-bold text-white/90"><span className="bg-black/45 rounded-full px-2 py-0.5">في الصورة: {PHOTO_HERO_SIZES}</span></span>
             </div>
             <div className="pg-hero-badge relative -mt-7 mx-auto w-[86%] max-w-[330px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] px-4 py-2.5 text-center shadow-2xl ring-4 ring-[#0B1B3F]">
-              <p className="text-[16px] font-black leading-snug flex items-center justify-center gap-1.5"><Gift size={17} /> سطل {BUCKET_KG} كلغ بـ {da(BUCKET_PRICE)}</p>
+              <p className="text-[16px] font-black leading-snug flex items-center justify-center gap-1.5"><Gift size={17} /> سطل {BUCKET_KG} كلغ بـ {da(bucketPrice())}</p>
               <p className="text-[13px] font-black">يغطي {M2_PER_BUCKET} م² · التوصيل مجاني</p>
             </div>
             <p className="mt-3 flex justify-center text-[12.5px] font-black">
@@ -444,7 +446,7 @@ export default function LandingPagePigma16({ config, onPurchase }: { config: any
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] font-bold text-sky-100/75">تلزمك حوالي {kgNeeded.toLocaleString('fr-DZ')} كلغ</p>
                   <p className="text-[15px] font-black leading-snug">{bucketsLabel(bucketsNeeded)} × {BUCKET_KG} كلغ = {bucketsNeeded * BUCKET_KG} كلغ</p>
-                  <p className="text-[13px] font-bold text-[#7DD9FF]">{da(bucketsNeeded * BUCKET_PRICE)} · توصيل مجاني</p>
+                  <p className="text-[13px] font-bold text-[#7DD9FF]">{da(bucketsNeeded * bucketPrice())} · توصيل مجاني</p>
                 </div>
               </div>
             )}
@@ -485,7 +487,7 @@ export default function LandingPagePigma16({ config, onPurchase }: { config: any
       <Section className="bg-[#F3F7FB]">
         <div className="text-center mb-5"><H2>عندك سؤال؟</H2></div>
         <div className="space-y-2">
-          {FAQ.map((item, i) => {
+          {FAQ().map((item, i) => {
             const open = openFaq === i;
             return (
               <div key={item.q} className="rounded-2xl border border-slate-200 bg-white">
@@ -518,7 +520,7 @@ export default function LandingPagePigma16({ config, onPurchase }: { config: any
         <div className="max-w-xl mx-auto bg-[#0B1B3F]/95 backdrop-blur px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] lg:rounded-t-3xl">
           <button type="button" tabIndex={showSticky ? 0 : -1} onClick={toForm}
             className="pg-shine relative overflow-hidden w-full h-[54px] rounded-2xl bg-[#FFD60A] text-[#0B1B3F] text-[16.5px] font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
-            <ShoppingCart size={20} /> اطلب الآن – {bucketsLabel(count)} بـ {da(count * BUCKET_PRICE)}
+            <ShoppingCart size={20} /> اطلب الآن – {bucketsLabel(count)} بـ {da(count * bucketPrice())}
           </button>
         </div>
       </div>

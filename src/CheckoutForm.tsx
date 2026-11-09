@@ -3,10 +3,12 @@ import { ShoppingCart, CheckCircle2, ShieldCheck, Clock, Plane, Smartphone, Chec
 import { useNavigate } from 'react-router-dom';
 import { WILAYAS, DELIVERY_PRICES } from './data';
 
+import { usePricing } from './pricing';
 const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product: any, promoActive?: boolean, promoText?: string, onPurchase: (p: number, product: any, formData: any) => void }) => {
   const navigate = useNavigate();
   const { price: productPrice, oldPrice: productOldPrice } = product;
   const isSubmittingRef = useRef(false);
+  usePricing(); // prix modifiables depuis le dashboard
   const [formData, setFormData] = useState<{
     name: string;
     phone: string;
@@ -30,7 +32,7 @@ const CheckoutForm = ({ product, promoActive, promoText, onPurchase }: { product
   // Dynamically load communes on demand so that algeria-locations is NOT in the critical path bundle
   useEffect(() => {
     if (formData.wilaya) {
-      import('algeria-locations').then(({ getCommunesByWilayaId }) => {
+      import('./communes').then(({ getCommunesByWilayaId }) => {
         const list = getCommunesByWilayaId(parseInt(formData.wilaya, 10));
         setCommuneList(list || []);
       }).catch(err => {

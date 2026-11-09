@@ -3,6 +3,7 @@ import { ShoppingCart, ShieldCheck, Truck, User, Phone, MapPin, CheckCircle2, Sp
 import { useNavigate } from 'react-router-dom';
 import { WILAYAS, DELIVERY_PRICES } from './data';
 
+import { usePricing } from './pricing';
 interface CheckoutFormMagsafeProps {
   onPurchase: (price: number, product: any, formData: any) => void;
 }
@@ -15,6 +16,7 @@ export default function CheckoutFormMagsafe({ onPurchase }: CheckoutFormMagsafeP
   const [selectedBundle, setSelectedBundle] = useState<1 | 2 | 3>(1);
   const [selectedColor, setSelectedColor] = useState<'titanium' | 'silver' | 'black'>('titanium');
 
+  usePricing(); // prix modifiables depuis le dashboard
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -31,7 +33,7 @@ export default function CheckoutFormMagsafe({ onPurchase }: CheckoutFormMagsafeP
   // Dynamically load communes
   useEffect(() => {
     if (formData.wilaya) {
-      import('algeria-locations').then(({ getCommunesByWilayaId }) => {
+      import('./communes').then(({ getCommunesByWilayaId }) => {
         const wilayaId = parseInt(formData.wilaya, 10);
         const list = getCommunesByWilayaId(wilayaId);
         setCommuneList(list || []);

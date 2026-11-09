@@ -3,10 +3,11 @@ import {
   ShieldCheck, Truck, Banknote, PhoneCall, Droplets, ShoppingCart, Check, ChevronDown, Play, Sparkles, PaintRoller, Sun,
   Calculator, BadgeCheck, MessageCircle, Eye, Layers, CloudRain, Gift,
 } from 'lucide-react';
-import CheckoutFormPigma, { PIGMA_PRODUCT, PIGMA_UNIT_PRICE, PIGMA_BOX_KG, PIGMA_DEFAULT_OFFER, getOffer, da, boxesLabel } from './CheckoutFormPigma';
+import CheckoutFormPigma, { PIGMA_PRODUCT, pigmaUnitPrice, PIGMA_BOX_KG, PIGMA_DEFAULT_OFFER, getOffer, da, boxesLabel } from './CheckoutFormPigma';
 import { DELIVERY_PRICES } from './data';
 import ambianceList from './pigma-ambiance.json';
 
+import { usePricing } from './pricing';
 // Étiquette envoyée dans le champ `source` des commandes de cette page
 const SOURCE_TAG = 'LP pigma-stop-fuites';
 const WHATSAPP = '213557920685';
@@ -126,6 +127,7 @@ const FAQ = (deskMin: number, homeMin: number) => [
 ];
 
 export default function LandingPagePigma({ config, onPurchase }: { config: any; onPurchase: (p: number, product: any, formData?: any) => void }) {
+  usePricing(); // prix modifiables depuis le dashboard
   const [offerId, setOfferId] = useState(PIGMA_DEFAULT_OFFER);
   const [area, setArea] = useState(10);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -145,7 +147,7 @@ export default function LandingPagePigma({ config, onPurchase }: { config: any; 
 
   // ViewContent (TikTok + Meta) une seule fois dès que les pixels sont prêts
   useEffect(() => {
-    const value = Number((PIGMA_UNIT_PRICE / rate).toFixed(2));
+    const value = Number((pigmaUnitPrice() / rate).toFixed(2));
     const content = { content_id: PIGMA_PRODUCT.id, content_type: 'product', content_name: PIGMA_PRODUCT.name };
     const fired = viewFiredRef.current;
     const stopTt = whenReady(() => !!window.ttq, () => {

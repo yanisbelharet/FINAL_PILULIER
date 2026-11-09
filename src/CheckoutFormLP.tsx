@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Phone, ChevronDown, Minus, Plus, Lock, Truck, Building2, AlertCircle } from 'lucide-react';
 import { WILAYAS, DELIVERY_PRICES } from './data';
 
+import { usePricing } from './pricing';
 // Convertit les chiffres arabes-indiens (٠-٩) et nettoie le numéro : "+213 555 12 34 56" -> "0555123456"
 export const normalizePhone = (raw: string) => {
   let p = raw.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[\s.\-()]/g, '');
@@ -39,6 +40,7 @@ const CheckoutFormLP = ({ product, formId, sourceTag, onPurchase, onFirstInterac
   const navigate = useNavigate();
   const productPrice = Number(product.price);
   const isSubmittingRef = useRef(false);
+  usePricing(); // prix modifiables depuis le dashboard
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -54,7 +56,7 @@ const CheckoutFormLP = ({ product, formId, sourceTag, onPurchase, onFirstInterac
 
   useEffect(() => {
     if (formData.wilaya) {
-      import('algeria-locations').then(({ getCommunesByWilayaId }) => {
+      import('./communes').then(({ getCommunesByWilayaId }) => {
         setCommuneList(getCommunesByWilayaId(parseInt(formData.wilaya, 10)) || []);
       }).catch(err => console.error('Failed to load communes:', err));
     } else {

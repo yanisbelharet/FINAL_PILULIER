@@ -4,12 +4,13 @@ import { WILAYAS } from './data';
 import { normalizePhone, isValidAlgerianMobile, getOrderSource } from './CheckoutFormLP';
 import { da } from './pigmaFormat';
 
+import { PRODUCT_PRICES, usePricing } from './pricing';
 // Grand format : seau de 16 kg, livraison gratuite (prix fixés par la boutique)
 export const PIGMA16_PRODUCT = { id: 'pigma-stop-fuites-16kg', name: 'Pigma Color Stop Fuites Transparent 16 kg' };
 export const BUCKET_KG = 16;
-export const BUCKET_PRICE = 11900;
-// Prix au kg affiché par la boutique (11 900 / 16 = 743,75 DA)
-export const PRICE_PER_KG_DISPLAY = 750;
+export const bucketPrice = () => PRODUCT_PRICES.pigmaSeau16; // modifiable dans le dashboard
+// Prix au kg affiché, arrondi à la dizaine supérieure (11 900 / 16 = 743,75 → 750 DA)
+export const pricePerKgDisplay = () => Math.ceil(bucketPrice() / BUCKET_KG / 10) * 10;
 // 1 kg couvre 4 m² en deux couches
 export const M2_PER_KG = 4;
 export const M2_PER_BUCKET = BUCKET_KG * M2_PER_KG;
@@ -29,6 +30,7 @@ const CheckoutFormPigma16 = ({ count, onCountChange, sourceTag, onPurchase, onFi
 }) => {
   const isSubmittingRef = useRef(false);
   const doneRef = useRef<HTMLDivElement>(null);
+  usePricing(); // prix modifiables depuis le dashboard
   const [formData, setFormData] = useState({ name: '', phone: '', wilaya: '', commune: '', deliveryType: 'home' as 'home' | 'desk' });
   const [errors, setErrors] = useState<Errors>({});
   const [submitError, setSubmitError] = useState('');
@@ -38,7 +40,7 @@ const CheckoutFormPigma16 = ({ count, onCountChange, sourceTag, onPurchase, onFi
 
   useEffect(() => {
     if (formData.wilaya) {
-      import('algeria-locations').then(({ getCommunesByWilayaId }) => {
+      import('./communes').then(({ getCommunesByWilayaId }) => {
         setCommuneList(getCommunesByWilayaId(parseInt(formData.wilaya, 10)) || []);
       }).catch(err => console.error('Failed to load communes:', err));
     } else {
@@ -51,7 +53,7 @@ const CheckoutFormPigma16 = ({ count, onCountChange, sourceTag, onPurchase, onFi
   }, [done]);
 
   const kg = count * BUCKET_KG;
-  const total = count * BUCKET_PRICE;
+  const total = count * bucketPrice();
 
   const update = (patch: Partial<typeof formData>) => {
     setFormData(prev => ({ ...prev, ...patch }));
@@ -171,9 +173,9 @@ const CheckoutFormPigma16 = ({ count, onCountChange, sourceTag, onPurchase, onFi
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[16px] font-black text-[#0B1B3F] leading-snug">سطل Stop Fuites شفاف 16 كلغ</p>
-            <p className="text-[12.5px] font-semibold text-slate-500">≈ {PRICE_PER_KG_DISPLAY} د.ج للكلغ · <b className="text-emerald-600">توصيل مجاني</b></p>
+            <p className="text-[12.5px] font-semibold text-slate-500">≈ {pricePerKgDisplay()} د.ج للكلغ · <b className="text-emerald-600">توصيل مجاني</b></p>
           </div>
-          <p className="shrink-0 text-[17px] font-black text-[#0B1B3F]">{da(BUCKET_PRICE)}</p>
+          <p className="shrink-0 text-[17px] font-black text-[#0B1B3F]">{da(bucketPrice())}</p>
         </div>
         <div className="mt-3 flex items-center justify-between bg-white rounded-xl px-3 h-14">
           <span className="text-[14px] font-bold text-slate-700">عدد السطول</span>

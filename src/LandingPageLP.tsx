@@ -7,6 +7,7 @@ import {
 import CheckoutFormLP from './CheckoutFormLP';
 import { DELIVERY_PRICES } from './data';
 
+import { usePricing } from './pricing';
 const Testimonials = lazy(() => import('./Testimonials'));
 
 // Produit de référence : on réutilise "med-alarm-v3" pour que le prix reste piloté depuis le dashboard
@@ -68,6 +69,7 @@ const FAQ_ITEMS = (homeMin: number, deskMin: number) => [
 ];
 
 export default function LandingPageLP({ config, onPurchase }: { config: any; onPurchase: (p: number, product: any, formData?: any) => void }) {
+  usePricing(); // prix modifiables depuis le dashboard
   const product = config.products?.find((p: any) => p.id === PRODUCT_ID) || {
     id: PRODUCT_ID, name: 'منبه الدواء الذكي', price: 2900, oldPrice: 4200,
   };

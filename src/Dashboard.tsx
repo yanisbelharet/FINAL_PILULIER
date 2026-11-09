@@ -4,6 +4,7 @@ import * as import_data from './data';
 import { motion } from 'motion/react';
 import { buildAppsScript, SHEETS_SCRIPT_VERSION } from './sheetsAppsScript';
 
+import { DEFAULT_PRODUCT_PRICES, PRODUCT_PRICE_LABELS, DEFAULT_DELIVERY_PRICES, type ProductPriceKey } from './pricing';
 export default function Dashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -651,7 +652,7 @@ export default function Dashboard() {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${activeTab === 'shipping' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' : 'hover:bg-slate-800 hover:text-white'}`}
           >
             <MapPin size={20} />
-            Tarifs & Livraison
+            Prix & Livraison
           </button>
           <button 
             onClick={() => setActiveTab('settings')}
@@ -1286,35 +1287,89 @@ export default function Dashboard() {
             )}
 
             
-            {/* Shipping Tab */}
+            {/* Shipping Tab : prix des produits et frais de livraison modifiables (appliqués au site après Enregistrer) */}
             {activeTab === 'shipping' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                <h2 className="text-2xl font-black text-slate-900 mb-8">Tarifs de Livraison & Wilayas</h2>
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                  <div className="p-6 border-b border-slate-100">
-                    <p className="text-slate-500 text-sm">Consultez les tarifs de livraison par wilaya (Domicile et Stop Desk). Ces données sont utilisées lors de la commande.</p>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <form onSubmit={handleSave} className="space-y-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 mb-1">Prix & Livraison</h2>
+                      <p className="text-slate-500 font-medium">Modifiez puis cliquez sur Enregistrer : le site utilise les nouveaux prix immédiatement.</p>
+                    </div>
+                    <button type="submit" disabled={saving} className="self-start md:self-auto px-6 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 disabled:opacity-60 flex items-center gap-2">
+                      <Save size={18} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
+                    </button>
                   </div>
-                  <div className="overflow-x-auto max-h-[600px]">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="sticky top-0 bg-slate-50 z-10 shadow-sm">
-                        <tr>
-                          <th className="p-4 font-bold text-slate-600 text-sm">Wilaya</th>
-                          <th className="p-4 font-bold text-slate-600 text-sm">Tarif Domicile (DA)</th>
-                          <th className="p-4 font-bold text-slate-600 text-sm">Tarif Stop Desk (DA)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Object.entries(import_data.DELIVERY_PRICES).map(([wilayaName, prices]: any) => (
-                          <tr key={wilayaName} className="border-b border-slate-50 hover:bg-slate-50">
-                            <td className="p-4 font-bold text-slate-800">{wilayaName}</td>
-                            <td className="p-4 text-emerald-600 font-black">{prices.home}</td>
-                            <td className="p-4 text-emerald-600 font-black">{prices.desk}</td>
+                  {saveMessage && (
+                    <div className={`px-6 py-4 rounded-2xl font-bold border ${saveMessage.includes('succès') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>{saveMessage}</div>
+                  )}
+
+                  <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+                    <h3 className="text-lg font-black text-slate-900 mb-1">Prix des produits (DA)</h3>
+                    <p className="text-slate-500 text-sm mb-5">Pages /lp/pigma-stop-fuites et /lp/pigma-16kg. Les offres 4 + 2, 7 et 9 boîtes et le seau 16 kg gardent la livraison gratuite.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {(Object.keys(DEFAULT_PRODUCT_PRICES) as ProductPriceKey[]).map(k => {
+                        const value = config.productPrices?.[k] ?? DEFAULT_PRODUCT_PRICES[k];
+                        const changed = value !== DEFAULT_PRODUCT_PRICES[k];
+                        return (
+                          <label key={k} className="block">
+                            <span className="text-sm font-bold text-slate-700">{PRODUCT_PRICE_LABELS[k]}</span>
+                            <div className="mt-1 flex items-center gap-2">
+                              <input type="number" min={0} step={50} inputMode="numeric" value={value}
+                                onChange={e => setConfig({ ...config, productPrices: { ...(config.productPrices || {}), [k]: Math.max(0, Number(e.target.value) || 0) } })}
+                                className={`w-full rounded-xl border px-4 py-2.5 font-black text-lg ${changed ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 text-slate-900'}`} />
+                              <span className="text-slate-400 text-sm whitespace-nowrap">défaut {DEFAULT_PRODUCT_PRICES[k]}</span>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-black text-slate-900 mb-1">Frais de livraison par wilaya (DA)</h3>
+                        <p className="text-slate-500 text-sm">En orange : différent du tarif par défaut.</p>
+                      </div>
+                      <button type="button" onClick={() => { if (window.confirm('Remettre tous les frais de livraison aux valeurs par défaut ?')) setConfig({ ...config, deliveryPrices: JSON.parse(JSON.stringify(DEFAULT_DELIVERY_PRICES)) }); }}
+                        className="self-start px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50">Valeurs par défaut</button>
+                    </div>
+                    <div className="overflow-x-auto max-h-[600px]">
+                      <table className="w-full text-left border-collapse">
+                        <thead className="sticky top-0 bg-slate-50 z-10 shadow-sm">
+                          <tr>
+                            <th className="p-4 font-bold text-slate-600 text-sm">Wilaya</th>
+                            <th className="p-4 font-bold text-slate-600 text-sm">Domicile (DA)</th>
+                            <th className="p-4 font-bold text-slate-600 text-sm">Stop Desk (DA)</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {Object.entries(DEFAULT_DELIVERY_PRICES).map(([wilayaName, def]) => {
+                            const cur = config.deliveryPrices?.[wilayaName] || {};
+                            const cell = (type: 'home' | 'desk') => {
+                              const value = cur[type] ?? def[type];
+                              return (
+                                <td className="p-2">
+                                  <input type="number" min={0} step={50} inputMode="numeric" value={value}
+                                    onChange={e => setConfig({ ...config, deliveryPrices: { ...(config.deliveryPrices || {}), [wilayaName]: { ...cur, [type]: Math.max(0, Number(e.target.value) || 0) } } })}
+                                    className={`w-28 rounded-lg border px-3 py-2 font-black ${value !== def[type] ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 text-emerald-700'}`} />
+                                </td>
+                              );
+                            };
+                            return (
+                              <tr key={wilayaName} className="border-b border-slate-50 hover:bg-slate-50">
+                                <td className="p-4 font-bold text-slate-800">{wilayaName}</td>
+                                {cell('home')}
+                                {cell('desk')}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
+                </form>
               </motion.div>
             )}
 

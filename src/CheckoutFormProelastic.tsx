@@ -3,6 +3,7 @@ import { ShoppingCart, ShieldCheck, Truck, User, Phone, MapPin, CheckCircle2, Al
 import { useNavigate } from 'react-router-dom';
 import { WILAYAS, DELIVERY_PRICES } from './data';
 
+import { usePricing } from './pricing';
 interface CheckoutFormProelasticProps {
   onPurchase: (price: number, product: any, formData: any) => void;
 }
@@ -17,6 +18,7 @@ export default function CheckoutFormProelastic({ onPurchase }: CheckoutFormProel
   const [selectedPackage, setSelectedPackage] = useState<ProelasticPackage>('3kg_offer');
   const [largeQtyNotes, setLargeQtyNotes] = useState('');
 
+  usePricing(); // prix modifiables depuis le dashboard
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -33,7 +35,7 @@ export default function CheckoutFormProelastic({ onPurchase }: CheckoutFormProel
   // Dynamically load communes
   useEffect(() => {
     if (formData.wilaya) {
-      import('algeria-locations').then(({ getCommunesByWilayaId }) => {
+      import('./communes').then(({ getCommunesByWilayaId }) => {
         const wilayaId = parseInt(formData.wilaya, 10);
         const list = getCommunesByWilayaId(wilayaId);
         setCommuneList(list || []);

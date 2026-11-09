@@ -8,6 +8,7 @@ import CheckoutFormProelasticLP, {
 } from './CheckoutFormProelasticLP';
 import { DELIVERY_PRICES } from './data';
 
+import { usePricing } from './pricing';
 // Étiquette envoyée dans le champ `source` des commandes de cette page
 const SOURCE_TAG = 'LP proelastic (B)';
 const TIKTOK_URL = 'https://www.tiktok.com/@yanishop_dz';
@@ -219,6 +220,7 @@ const FAQ = (deskMin: number, homeMin: number) => [
 ];
 
 export default function LandingPageProelasticLP({ config, onPurchase }: { config: any; onPurchase: (p: number, product: any, formData?: any) => void }) {
+  usePricing(); // prix modifiables depuis le dashboard
   const [packageId, setPackageId] = useState<ProelasticPackageId>('3kg_offer');
   const [packCount, setPackCount] = useState(1);
   const [area, setArea] = useState(10);

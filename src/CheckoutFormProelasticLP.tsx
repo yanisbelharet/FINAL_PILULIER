@@ -4,6 +4,7 @@ import { User, Phone, ChevronDown, Minus, Plus, Lock, Truck, Building2, AlertCir
 import { WILAYAS, DELIVERY_PRICES } from './data';
 import { normalizePhone, isValidAlgerianMobile, getOrderSource } from './CheckoutFormLP';
 
+import { usePricing } from './pricing';
 export const PROELASTIC_PRODUCT = { id: 'proelastic-profinish', name: 'PROELASTIC Profinish' };
 
 // Offres : 1 kg couvre ~2 m²
@@ -28,6 +29,7 @@ const CheckoutFormProelasticLP = ({ packageId, onPackageChange, packCount, onPac
 }) => {
   const navigate = useNavigate();
   const isSubmittingRef = useRef(false);
+  usePricing(); // prix modifiables depuis le dashboard
   const [formData, setFormData] = useState({ name: '', phone: '', wilaya: '', commune: '', deliveryType: 'home' as 'home' | 'desk' });
   const [errors, setErrors] = useState<Errors>({});
   const [submitError, setSubmitError] = useState('');
@@ -36,7 +38,7 @@ const CheckoutFormProelasticLP = ({ packageId, onPackageChange, packCount, onPac
 
   useEffect(() => {
     if (formData.wilaya) {
-      import('algeria-locations').then(({ getCommunesByWilayaId }) => {
+      import('./communes').then(({ getCommunesByWilayaId }) => {
         setCommuneList(getCommunesByWilayaId(parseInt(formData.wilaya, 10)) || []);
       }).catch(err => console.error('Failed to load communes:', err));
     } else {

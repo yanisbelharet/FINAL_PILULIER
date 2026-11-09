@@ -4,23 +4,24 @@ import { WILAYAS, DELIVERY_PRICES } from './data';
 import { normalizePhone, isValidAlgerianMobile, getOrderSource } from './CheckoutFormLP';
 import { da } from './pigmaFormat';
 
+import { PRODUCT_PRICES, usePricing } from './pricing';
 export const PIGMA_PRODUCT = { id: 'pigma-stop-fuites-transparent', name: 'Pigma Color Stop Fuites Transparent 1,4 kg' };
-// Prix normal d'une boîte de 1,4 kg (fixé par la boutique)
-export const PIGMA_UNIT_PRICE = 1900;
+// Prix normal d'une boîte de 1,4 kg (modifiable dans le dashboard)
+export const pigmaUnitPrice = () => PRODUCT_PRICES.pigmaUnit;
 export const PIGMA_BOX_KG = 1.4;
 
 export type PigmaOffer = { id: string; title: string; boxes: number; paid: number; price: number; freeDelivery: boolean; badge: string };
 
 // Les 3 offres affichées
 export const PIGMA_OFFERS: PigmaOffer[] = [
-  { id: 'pack1', title: 'علبة واحدة', boxes: 1, paid: 1, price: 1900, freeDelivery: false, badge: '' },
-  { id: 'pack3', title: '2 علب + 1 مجانية', boxes: 3, paid: 2, price: 3800, freeDelivery: false, badge: '' },
-  { id: 'pack6', title: '4 علب + 2 مجانيات', boxes: 6, paid: 4, price: 7600, freeDelivery: true, badge: 'الأكثر توفيرا' },
+  { id: 'pack1', title: 'علبة واحدة', boxes: 1, paid: 1, get price() { return PRODUCT_PRICES.pigmaUnit; }, freeDelivery: false, badge: '' },
+  { id: 'pack3', title: '2 علب + 1 مجانية', boxes: 3, paid: 2, get price() { return PRODUCT_PRICES.pigmaPack3; }, freeDelivery: false, badge: '' },
+  { id: 'pack6', title: '4 علب + 2 مجانيات', boxes: 6, paid: 4, get price() { return PRODUCT_PRICES.pigmaPack6; }, freeDelivery: true, badge: 'الأكثر توفيرا' },
 ];
 // Combinaisons proposées uniquement par la calculatrice (7 à 9 boîtes) : elles contiennent l'offre 4+2, donc livraison gratuite
 export const PIGMA_COMBOS: PigmaOffer[] = [
-  { id: 'combo7', title: '4 علب + 2 مجانيات + علبة', boxes: 7, paid: 5, price: 9500, freeDelivery: true, badge: '' },
-  { id: 'combo9', title: '4 علب + 2 مجانيات + 2 علب + 1 مجانية', boxes: 9, paid: 6, price: 11400, freeDelivery: true, badge: '' },
+  { id: 'combo7', title: '4 علب + 2 مجانيات + علبة', boxes: 7, paid: 5, get price() { return PRODUCT_PRICES.pigmaCombo7; }, freeDelivery: true, badge: '' },
+  { id: 'combo9', title: '4 علب + 2 مجانيات + 2 علب + 1 مجانية', boxes: 9, paid: 6, get price() { return PRODUCT_PRICES.pigmaCombo9; }, freeDelivery: true, badge: '' },
 ];
 // Offre par défaut : 2 achetées + 1 offerte
 export const PIGMA_DEFAULT_OFFER = 'pack3';
@@ -30,7 +31,7 @@ export { da };
 export const boxesLabel = (n: number) => (n === 1 ? 'علبة وحدة' : n === 2 ? 'زوج علب' : `${n} علب`);
 
 const OfferCard = ({ o, active, onSelect, note }: { o: PigmaOffer; active: boolean; onSelect: (id: string) => void; note?: string }) => {
-  const full = o.boxes * PIGMA_UNIT_PRICE;
+  const full = o.boxes * pigmaUnitPrice();
   return (
     <button type="button" role="radio" aria-checked={active} onClick={() => onSelect(o.id)} data-offer={o.id}
       className={`pg-offer relative w-full rounded-2xl border-2 p-3 flex items-center gap-3 text-right transition-all ${
@@ -69,6 +70,7 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
 }) => {
   const isSubmittingRef = useRef(false);
   const doneRef = useRef<HTMLDivElement>(null);
+  usePricing(); // prix modifiables depuis le dashboard
   const [formData, setFormData] = useState({ name: '', phone: '', wilaya: '', commune: '', deliveryType: 'home' as 'home' | 'desk' });
   const [errors, setErrors] = useState<Errors>({});
   const [submitError, setSubmitError] = useState('');
@@ -78,7 +80,7 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
 
   useEffect(() => {
     if (formData.wilaya) {
-      import('algeria-locations').then(({ getCommunesByWilayaId }) => {
+      import('./communes').then(({ getCommunesByWilayaId }) => {
         setCommuneList(getCommunesByWilayaId(parseInt(formData.wilaya, 10)) || []);
       }).catch(err => console.error('Failed to load communes:', err));
     } else {

@@ -21,6 +21,7 @@ const P400 = '/lp-assets/pigma400/';
 const REVIEWS: { src: string; w: number; h: number; alt: string }[] = [
   { src: '/lp-assets/pigma-main/avis-1.webp', w: 720, h: 401, alt: 'تعليق على تيك توك: خدمت بيه' },
   { src: '/lp-assets/pigma-main/avis-2.webp', w: 706, h: 814, alt: 'تعليقات على تيك توك: الحل المثالي بتجربة' },
+  { src: '/lp-assets/pigma-main/avis-3.webp', w: 720, h: 453, alt: 'تعليق على فيسبوك: منتج إيفيكاس جربتو لبعض الزبائن' },
 ].slice(0, 4);
 
 const M2_PER_BOX = PIGMA_BOX_KG * 4; // 1 kg couvre 4 m² en deux couches
@@ -212,7 +213,7 @@ export default function LandingPageMain({ config, onPurchase }: { config: any; o
         {REVIEWS.length > 0 && (
           <section className="pt-8">
             <h2 className="text-center text-[23px] font-black text-[#0B1B3F]">آراء الناس اللي جربوه</h2>
-            <p className="mt-1 text-center text-[13px] font-semibold text-slate-500">تعليقات حقيقية على تيك توك حول Stop Fuites (الأسماء مخفية)</p>
+            <p className="mt-1 text-center text-[13px] font-semibold text-slate-500">تعليقات حقيقية على تيك توك وفيسبوك حول Stop Fuites (الأسماء مخفية)</p>
             <div className="mt-4 grid grid-cols-2 gap-2 items-start">
               {REVIEWS.map(r => <Img key={r.src} src={r.src} w={r.w} h={r.h} alt={r.alt} />)}
             </div>

@@ -15,6 +15,10 @@ const LandingPageProelasticLP = lazy(() => import('./LandingPageProelasticLP'));
 const LandingPagePigma = lazy(() => import('./LandingPagePigma'));
 const LandingPagePigma16 = lazy(() => import('./LandingPagePigma16'));
 const LandingPage400g = lazy(() => import('./LandingPage400g'));
+const LandingPageMain = lazy(() => import('./LandingPageMain'));
+// Page rapide sans pixels Facebook / Google (seul TikTok PIGMA1, chargé dans index.html)
+const NO_EXTRA_PIXELS_PATH = '/lp/pigma-main';
+const noExtraPixels = () => typeof window !== 'undefined' && window.location.pathname.indexOf(NO_EXTRA_PIXELS_PATH) === 0;
 
 // Pages internes (dashboard /admin et app mobile /app) : pas de pixels ni de comptage de visites
 const isInternalPage = () => /^\/(admin|app)(\/|$)/.test(window.location.pathname);
@@ -179,7 +183,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!config || isInternalPage()) return;
+    if (!config || isInternalPage() || noExtraPixels()) return;
 
     // Initialize tracking queues immediately so no events are lost
     if (config.fbPixelId && !window.fbq) {
@@ -326,7 +330,8 @@ export default function App() {
       }
     }
     
-    if (config?.fbPixelId && window.fbq) {
+    const skipFbGoogle = noExtraPixels();
+    if (!skipFbGoogle && config?.fbPixelId && window.fbq) {
       window.fbq('track', 'Purchase', { value: usdValue, currency: 'USD' }, { eventID: eventId });
     }
     // window.ttq est défini par le code de base TikTok du <head> (indépendant de /api/config)
@@ -349,7 +354,7 @@ export default function App() {
       });
     }
 
-    if (config?.googleAdsId && config?.googleAdsLabel && typeof window !== 'undefined') {
+    if (!skipFbGoogle && config?.googleAdsId && config?.googleAdsLabel && typeof window !== 'undefined') {
       window.dataLayer = window.dataLayer || [];
       function gtag(..._args: any[]) { window.dataLayer.push(arguments); }
       
@@ -367,7 +372,7 @@ export default function App() {
       });
     }
 
-    if (config?.ga4MeasurementId && typeof window !== 'undefined') {
+    if (!skipFbGoogle && config?.ga4MeasurementId && typeof window !== 'undefined') {
       window.dataLayer = window.dataLayer || [];
       function gtag(..._args: any[]) { window.dataLayer.push(arguments); }
       gtag('event', 'purchase', {
@@ -407,6 +412,7 @@ export default function App() {
           <Route path="/lp/proelastic" element={<LandingPageProelasticLP config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/pigma-stop-fuites" element={<LandingPagePigma config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/pigma-16kg" element={<LandingPagePigma16 config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/lp/pigma-main" element={<LandingPageMain config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/pigma-400g" element={<LandingPage400g config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/app" element={<AdminApp />} />

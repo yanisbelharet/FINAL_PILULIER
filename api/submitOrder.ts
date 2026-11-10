@@ -132,7 +132,9 @@ export default async function handler(req, res) {
         const deliveryPrice = wilayaPrice && deliveryType ? wilayaPrice[deliveryType as 'home' | 'desk'] : 0;
         const basePrice = productPrice !== undefined ? Number(productPrice) : (Number(price) - deliveryPrice);
 
-        const ttPixels = configData.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
+        let ttPixels = configData.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
+        // /lp/pigma-main : uniquement le pixel PIGMA1
+        if (source === 'lp-main') ttPixels = ttPixels.filter((p: string) => p === 'DBJA2NRC77U3VQV6KJT0');
         for (const pixel of ttPixels) {
           const ttPayload = {
             pixel_code: pixel,

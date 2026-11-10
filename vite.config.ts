@@ -10,6 +10,7 @@ const LP_PRELOAD: Record<string, string> = {
   '/lp/pigma-stop-fuites': 'src/LandingPagePigma.tsx',
   '/lp/pigma-16kg': 'src/LandingPagePigma16.tsx',
   '/lp/pigma-400g': 'src/LandingPage400g.tsx',
+  '/lp/pigma-main': 'src/LandingPageMain.tsx',
 };
 
 function lpModulePreload(routes: Record<string, string>): Plugin {

@@ -14,7 +14,8 @@
           ;n.type="text/javascript",n.async=!0,n.fetchPriority="high",n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
 
           ttq.load('DBJA2NRC77U3VQV6KJT0');
-          ttq.load('D2RO1VRC77U9PGFLCGLG');
+          // /lp/pigma-main : uniquement PIGMA1 (pas Monabih1)
+          if (location.pathname.indexOf('/lp/pigma-main') !== 0) ttq.load('D2RO1VRC77U9PGFLCGLG');
           ttq.page();
         }(window, document, 'ttq');
       }
@@ -72,7 +73,7 @@
         var l = document.createElement('link');
         l.rel = 'preload'; l.as = 'image'; l.setAttribute('fetchpriority', 'high');
         l.href = location.pathname.indexOf('/lp/proelastic') === 0 ? '/lp-assets/proelastic/pot-1kg.webp'
-          : location.pathname.indexOf('/lp/pigma-stop-fuites') === 0 ? '/lp-assets/pigma/pot-transparent-1-4kg.webp'
+          : (location.pathname.indexOf('/lp/pigma-stop-fuites') === 0 || location.pathname.indexOf('/lp/pigma-main') === 0) ? '/lp-assets/pigma/pot-transparent-1-4kg.webp'
           : location.pathname.indexOf('/lp/pigma-16kg') === 0 ? '/lp-assets/pigma/pots-1-4kg-5kg-pluie.webp'
           : '/lp-assets/med-alarm-hero.webp';
         document.head.appendChild(l);

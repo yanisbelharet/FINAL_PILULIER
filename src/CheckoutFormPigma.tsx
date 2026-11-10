@@ -30,15 +30,16 @@ export const getOffer = (id: string) => [...PIGMA_OFFERS, ...PIGMA_COMBOS].find(
 export { da };
 export const boxesLabel = (n: number) => (n === 1 ? 'علبة وحدة' : n === 2 ? 'زوج علب' : `${n} علب`);
 
-const OfferCard = ({ o, active, onSelect, note }: { o: PigmaOffer; active: boolean; onSelect: (id: string) => void; note?: string }) => {
+const OfferCard = ({ o, active, onSelect, note, badge, discreet }: { o: PigmaOffer; active: boolean; onSelect: (id: string) => void; note?: string; badge?: string; discreet?: boolean }) => {
   const full = o.boxes * pigmaUnitPrice();
+  const label = badge !== undefined ? badge : o.badge;
   return (
     <button type="button" role="radio" aria-checked={active} onClick={() => onSelect(o.id)} data-offer={o.id}
-      className={`pg-offer relative w-full rounded-2xl border-2 p-3 flex items-center gap-3 text-right transition-all ${
+      className={`pg-offer relative w-full rounded-2xl border-2 ${discreet && !active ? 'p-2.5 opacity-90' : 'p-3'} flex items-center gap-3 text-right transition-all ${
         active ? 'border-[#1366d6] bg-sky-50 shadow-sm' : 'border-slate-200 bg-white'}`}>
-      {(o.badge || note) && (
+      {(label || note) && (
         <span className="absolute -top-2.5 left-3 text-[11px] font-black text-[#0B1B3F] bg-[#FFD60A] rounded-full px-2.5 py-0.5 shadow flex items-center gap-1">
-          {note && <Calculator size={11} />}{o.badge || note}
+          {note && <Calculator size={11} />}{label || note}
         </span>
       )}
       <span className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${active ? 'border-[#1366d6] bg-[#1366d6] text-white' : 'border-slate-300'}`}>
@@ -61,12 +62,16 @@ const OfferCard = ({ o, active, onSelect, note }: { o: PigmaOffer; active: boole
 type Field = 'name' | 'phone' | 'wilaya' | 'commune';
 type Errors = Partial<Record<Field, string>>;
 
-const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFirstInteraction }: {
+const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFirstInteraction, source, extraPayload, highlightOffer }: {
   offerId: string;
   onOfferChange: (id: string) => void;
   sourceTag: string;
   onPurchase: (p: number, product: any, formData: any) => void;
   onFirstInteraction?: () => void;
+  // Options de /lp/pigma-main (absentes sur /lp/pigma-stop-fuites : rendu et envoi inchangés)
+  source?: string;                              // champ « source » exact (ex. « lp-main »)
+  extraPayload?: () => Record<string, any>;     // champs ajoutés à la commande (ex. paramètres UTM)
+  highlightOffer?: { id: string; badge: string }; // offre mise en avant ; les autres cartes plus discrètes, « التوصيل من … » affiché
 }) => {
   const isSubmittingRef = useRef(false);
   const doneRef = useRef<HTMLDivElement>(null);
@@ -155,7 +160,8 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
           productId: PIGMA_PRODUCT.id,
           productName,
           eventId,
-          source: `${sourceTag} · ${getOrderSource()}`,
+          source: source || `${sourceTag} · ${getOrderSource()}`,
+          ...(extraPayload ? extraPayload() : {}),
         }),
       });
 
@@ -214,8 +220,15 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
       {/* Choix de l'offre */}
       <div className="space-y-3 mb-4" role="radiogroup" aria-label="اختار العرض">
         {combo && <OfferCard o={combo} active onSelect={onOfferChange} note="اقتراح الحاسبة" />}
-        {PIGMA_OFFERS.map(o => <React.Fragment key={o.id}><OfferCard o={o} active={o.id === offerId} onSelect={onOfferChange} /></React.Fragment>)}
+        {PIGMA_OFFERS.map(o => <React.Fragment key={o.id}>{highlightOffer
+          ? <OfferCard o={o} active={o.id === offerId} onSelect={onOfferChange} badge={o.id === highlightOffer.id ? highlightOffer.badge : ''} discreet={o.id !== highlightOffer.id} />
+          : <OfferCard o={o} active={o.id === offerId} onSelect={onOfferChange} />}</React.Fragment>)}
       </div>
+      {highlightOffer && !formData.wilaya && !offer.freeDelivery && (
+        <p className="-mt-2 mb-4 text-center text-[14px] font-bold text-slate-600 flex items-center justify-center gap-1.5">
+          <Truck size={16} className="text-[#1366d6]" /> التوصيل من {da(Math.min(...Object.values(DELIVERY_PRICES).map(p => p.home)))}
+        </p>
+      )}
 
       <div className="space-y-3">
         <div>

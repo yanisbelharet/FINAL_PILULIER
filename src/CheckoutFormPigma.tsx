@@ -104,9 +104,7 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
   const wilayaPrice = formData.wilaya ? DELIVERY_PRICES[formData.wilaya] : null;
   const deliveryPrice = offer.freeDelivery ? 0 : (wilayaPrice ? wilayaPrice[formData.deliveryType] : 0);
   const totalPrice = offer.price + deliveryPrice;
-  const deskMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.desk));
-  const homeMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.home));
-  const deliveryFrom = highlightOffer ? `(من ${da(Math.min(deskMin, homeMin))})` : undefined;
+  const deliveryFrom = highlightOffer ? `(من ${da(Math.min(...Object.values(DELIVERY_PRICES).map(p => Math.min(p.desk, p.home))))})` : undefined;
 
   const update = (patch: Partial<typeof formData>) => {
     setFormData(prev => ({ ...prev, ...patch }));
@@ -229,13 +227,6 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
           ? <OfferCard o={o} active={o.id === offerId} onSelect={onOfferChange} badge={o.id === highlightOffer.id ? highlightOffer.badge : ''} delivery={deliveryFrom} />
           : <OfferCard o={o} active={o.id === offerId} onSelect={onOfferChange} />}</React.Fragment>)}
       </div>
-      {highlightOffer && !formData.wilaya && !offer.freeDelivery && (
-        <div className="-mt-1 mb-4 rounded-2xl border border-sky-100 bg-sky-50/60 px-3 py-2.5 text-center">
-          <p className="text-[14px] font-black text-[#0B1B3F] flex items-center justify-center gap-1.5"><Truck size={16} className="text-[#1366d6]" /> سعر التوصيل حسب الولاية</p>
-          <p className="mt-0.5 text-[13px] font-bold text-slate-600">للمكتب من {da(deskMin)} · للدار من {da(homeMin)}</p>
-          <p className="text-[12px] font-semibold text-slate-500">اختار ولايتك تحت باش تشوف السعر بالضبط</p>
-        </div>
-      )}
 
       <div className="space-y-3">
         <div>

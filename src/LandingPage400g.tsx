@@ -13,7 +13,7 @@ declare global { interface Window { ttq: any; fbq: any; gtag: any } }
 
 const SOURCE = 'lp-400g';
 const WHATSAPP = '213557920685';
-const OFFERS = ['pack1', 'pack3'] as const;
+const OFFERS = ['pack1', 'pack3', 'pack6'] as const;
 const DEFAULT_OFFER = 'pack3';
 const IMG = '/lp-assets/pigma400/';
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id', 'ttclid', 'fbclid', 'gclid'];
@@ -47,7 +47,7 @@ const homeMin = () => Math.min(...Object.values(DELIVERY_PRICES).map(p => p.home
 
 const FAQ = () => [
   { q: 'شحال تغطي العلبة؟', a: 'كل 1 كلغ يغطي حوالي 4 م² بطبقتين. يعني العلبة تاع 1,4 كلغ تغطي حوالي 5,6 م².' },
-  { q: 'شحال التوصيل؟', a: `التوصيل للدار حسب الولاية، يبدا من ${homeMin()} د.ج، ويبانلك السعر كي تختار الولاية في الاستمارة. يوصلك في 24 ساعة، و48 ساعة على الأكثر.` },
+  { q: 'شحال التوصيل؟', a: `عرض 4+2: التوصيل مجاني. العروض الأخرى: التوصيل للدار حسب الولاية، يبدا من ${homeMin()} د.ج، ويبانلك السعر كي تختار الولاية في الاستمارة. يوصلك في 24 ساعة، و48 ساعة على الأكثر.` },
   { q: 'المنتوج أصلي؟', a: 'إيه، Stop Fuites أصلي من Pigma Color. احذرو الماركات المقلدة: تستلم العلبة وتشوفها قبل ما تخلص.' },
   { q: 'كيفاش نخلص؟', a: 'الدفع عند الاستلام: ما تخلص والو دركا. تستلم الطلب، تشوفو، ومن بعد تخلص لعامل التوصيل.' },
 ];
@@ -89,7 +89,8 @@ const OrderForm = ({ offerId, onOfferChange, onPurchase, onFirstInteraction }: {
   useEffect(() => { if (done) doneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [done]);
 
   const offer = getOffer(offerId);
-  const delivery = formData.wilaya && DELIVERY_PRICES[formData.wilaya] ? DELIVERY_PRICES[formData.wilaya].home : null;
+  // offre 4 + 2 : livraison gratuite (comme sur /lp/pigma-stop-fuites)
+  const delivery = offer.freeDelivery ? 0 : formData.wilaya && DELIVERY_PRICES[formData.wilaya] ? DELIVERY_PRICES[formData.wilaya].home : null;
   const total = offer.price + (delivery || 0);
 
   const update = (patch: Partial<typeof formData>) => {
@@ -205,7 +206,10 @@ const OrderForm = ({ offerId, onOfferChange, onPurchase, onFirstInteraction }: {
               <span className={`shrink-0 w-7 h-7 rounded-full border-[3px] flex items-center justify-center ${active ? 'border-[#16a34a] bg-[#16a34a]' : 'border-slate-300'}`}>
                 {active && <Check size={16} strokeWidth={4} className="text-white" />}
               </span>
-              <span className="flex-1 text-[18px] font-black text-[#0B1B3F] leading-snug">{id === 'pack1' ? 'علبة واحدة 1,4 كلغ' : '2 علب + 1 مجانية'}</span>
+              <span className="flex-1 text-[18px] font-black text-[#0B1B3F] leading-snug">
+                {id === 'pack1' ? 'علبة واحدة 1,4 كلغ' : id === 'pack3' ? '2 علب + 1 مجانية' : '4 علب + 2 مجانيات'}
+                {o.freeDelivery && <span className="block mt-1 text-[14px] font-black text-emerald-700">🚚 التوصيل مجاني</span>}
+              </span>
               <span className="shrink-0 text-[20px] font-black text-[#0B4FB3]">{da(o.price)}</span>
             </button>
           );
@@ -262,7 +266,7 @@ const OrderForm = ({ offerId, onOfferChange, onPurchase, onFirstInteraction }: {
             <span>{boxesLabel(offer.boxes)}</span><span className="font-bold text-slate-800">{da(offer.price)}</span>
           </div>
           <div className="flex justify-between text-[15px] font-semibold text-slate-600 mt-1">
-            <span>التوصيل للدار</span><span className="font-bold text-slate-800">{delivery !== null ? da(delivery) : 'اختار الولاية'}</span>
+            <span>التوصيل للدار</span><span className="font-bold text-slate-800">{offer.freeDelivery ? <b className="text-emerald-600">مجاني</b> : delivery !== null ? da(delivery) : 'اختار الولاية'}</span>
           </div>
           <div className="flex justify-between items-end mt-2 pt-2 border-t border-sky-100">
             <span className="text-[16px] font-black text-[#0B1B3F]">المجموع</span>

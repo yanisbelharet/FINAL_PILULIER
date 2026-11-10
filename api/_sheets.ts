@@ -14,7 +14,7 @@ import { DELIVERY_PRICES } from "./_delivery.js";
 export type SheetOrder = { key: string; sheet: string; row: string[]; qty: string };
 
 // Offres Stop Fuites 1,4 kg (src/CheckoutFormPigma.tsx) : boîtes achetées + offertes
-const PIGMA_QTY: Record<string, string> = { pack1: '1', pack3: '2+1', pack6: '4+2', combo7: '4+2+1', combo9: '4+2+2+1' };
+const PIGMA_QTY: Record<string, string> = { pack1: '1', pack3: '2+1', pack6: '4+2', combo7: '4+2+1', combo9: '4+2+2+1', combo12: '8+4' };
 export function qtyLabel(o: any): string {
   const id = String(o.productId || '');
   if (id.startsWith('pigma-stop-fuites') && id !== 'pigma-stop-fuites-16kg' && PIGMA_QTY[o.bundleId]) return PIGMA_QTY[o.bundleId];

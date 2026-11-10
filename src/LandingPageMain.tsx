@@ -25,8 +25,9 @@ const REVIEWS: { src: string; w: number; h: number; alt: string }[] = [
 ].slice(0, 4);
 
 const M2_PER_BOX = PIGMA_BOX_KG * 4; // 1 kg couvre 4 m² en deux couches
-const CALC_MAX_BOXES = 9;
-const offerForBoxes = (n: number) => (n <= 1 ? 'pack1' : n <= 3 ? 'pack3' : n <= 6 ? 'pack6' : n === 7 ? 'combo7' : 'combo9');
+const CALC_MAX_BOXES = 12; // offre max : 8 + 4 gratuites (2 × 4+2), livraison gratuite
+const CALC_MAX_M2 = 70;
+const offerForBoxes = (n: number) => (n <= 1 ? 'pack1' : n <= 3 ? 'pack3' : n <= 6 ? 'pack6' : n === 7 ? 'combo7' : n <= 9 ? 'combo9' : 'combo12');
 const usdRate = (config: any) => (Number(config?.usdRate) > 0 ? Number(config.usdRate) : 250);
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id', 'ttclid', 'fbclid', 'gclid'];
 
@@ -52,7 +53,7 @@ const FAQ = (deskMin: number, homeMin: number) => [
   { q: 'شحال من وقت باش ينشف؟', a: 'طبقة التحضير: 6 ساعات. بين الطبقة الأولى والثانية: 24 ساعة. وما لازمش تطيح الشتا 24 حتى 48 ساعة من بعد الدهان.' },
   { q: 'علاش يبان أبيض كي ندهنو؟', a: 'عادي. كي يتدهن يكون سايل وشوية أبيض كي الحليب، ويولي شفاف وما يبانش غير كي ينشف كامل.' },
   { q: 'على واش نقدر ندهنو؟', a: 'السطح والتيراس، البالكونات، الحيوط والياجور، الكارلاج والفايونس، الحمام وخزانات الماء. لازم السطح يكون نقي، بلا دسم وناشف 100%.' },
-  { q: 'إذا السطح كبير وتلزمني أكثر من 9 علب؟', a: 'للكميات الأكبر نعطيوك سعر خاص بيك. ابعثلنا على واتساب المساحة تاعك.' },
+  { q: 'إذا السطح أكبر من 70 م²؟', a: 'للكميات الأكبر نعطيوك سعر خاص بيك. ابعثلنا على واتساب المساحة تاعك.' },
   { q: 'شحال سومة التوصيل وشحال يطوّل؟', a: `عرض 4+2: التوصيل مجاني. علبة وحدة ولا عرض 2+1: حسب الولاية، من ${deskMin} د.ج للمكتب ومن ${homeMin} د.ج للدار. يوصلك في 24 ساعة، و48 ساعة على الأكثر.` },
   { q: 'المنتوج أصلي؟', a: 'إيه، Stop Fuites أصلي من Pigma Color. احذرو الماركات المقلدة: تستلم العلبة وتشوفها قبل ما تخلص.' },
   { q: 'كيفاش نخلص؟', a: 'الدفع عند الاستلام: ما تخلص والو دركا. تستلم الطلب، تشوفو، ومن بعد تخلص لعامل التوصيل.' },
@@ -138,8 +139,9 @@ export default function LandingPageMain({ config, onPurchase }: { config: any; o
   };
   const waLink = (text: string) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`;
 
-  const boxesNeeded = area > 0 ? Math.ceil(area / M2_PER_BOX - 1e-9) : 0;
-  const tooBig = boxesNeeded > CALC_MAX_BOXES;
+  // jusqu'à 70 m² : 12 boîtes max (offre 8+4) ; au-delà : prix spécial sur WhatsApp
+  const tooBig = area > CALC_MAX_M2;
+  const boxesNeeded = area > 0 ? Math.min(Math.ceil(area / M2_PER_BOX - 1e-9), CALC_MAX_BOXES) : 0;
   const suggestion = boxesNeeded > 0 && !tooBig ? getOffer(offerForBoxes(boxesNeeded)) : null;
   const deskMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.desk));
   const homeMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.home));
@@ -232,11 +234,11 @@ export default function LandingPageMain({ config, onPurchase }: { config: any; o
                 className="w-24 h-12 rounded-xl bg-white text-[#0B1B3F] text-[22px] font-black text-center outline-none" />
               <span className="text-[18px] font-black">م²</span>
             </div>
-            <input type="range" min={1} max={60} step={1} value={Math.min(Math.max(area, 1), 60)} onChange={e => setArea(Number(e.target.value))}
+            <input type="range" min={1} max={CALC_MAX_M2} step={1} value={Math.min(Math.max(area, 1), CALC_MAX_M2)} onChange={e => setArea(Number(e.target.value))}
               aria-label="مساحة السطح بالمتر المربع" className="mt-4 w-full accent-[#FFD60A] h-2" />
             {tooBig ? (
               <div className="mt-4 rounded-2xl bg-[#FFD60A] text-[#0B1B3F] p-4">
-                <p className="text-[16px] font-black">تلزمك أكثر من 9 علب</p>
+                <p className="text-[16px] font-black">المساحة أكثر من 70 م²</p>
                 <p className="mt-1 text-[14px] font-bold">للكميات الأكبر، نعطيوك سعر خاص بيك.</p>
                 <a href={waLink(`السلام عليكم، حاب سعر خاص لـ Stop Fuites الشفاف. المساحة: ${area} م²`)} target="_blank" rel="noopener noreferrer"
                   className="mt-3 h-12 rounded-xl bg-[#0B1B3F] text-white font-black flex items-center justify-center gap-2"><MessageCircle size={19} /> اطلب سعرك على واتساب</a>

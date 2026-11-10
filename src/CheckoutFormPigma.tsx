@@ -22,6 +22,8 @@ export const PIGMA_OFFERS: PigmaOffer[] = [
 export const PIGMA_COMBOS: PigmaOffer[] = [
   { id: 'combo7', title: '4 علب + 2 مجانيات + علبة', boxes: 7, paid: 5, get price() { return PRODUCT_PRICES.pigmaCombo7; }, freeDelivery: true, badge: '' },
   { id: 'combo9', title: '4 علب + 2 مجانيات + 2 علب + 1 مجانية', boxes: 9, paid: 6, get price() { return PRODUCT_PRICES.pigmaCombo9; }, freeDelivery: true, badge: '' },
+  // 2 × l'offre 4+2 (calculatrice de /lp/pigma-main, jusqu'à 12 boîtes) : prix = 2 × prix du pack 4+2
+  { id: 'combo12', title: '8 علب + 4 مجانيات', boxes: 12, paid: 8, get price() { return PRODUCT_PRICES.pigmaPack6 * 2; }, freeDelivery: true, badge: '' },
 ];
 // Offre par défaut : 2 achetées + 1 offerte
 export const PIGMA_DEFAULT_OFFER = 'pack3';
@@ -30,12 +32,12 @@ export const getOffer = (id: string) => [...PIGMA_OFFERS, ...PIGMA_COMBOS].find(
 export { da };
 export const boxesLabel = (n: number) => (n === 1 ? 'علبة وحدة' : n === 2 ? 'زوج علب' : `${n} علب`);
 
-const OfferCard = ({ o, active, onSelect, note, badge, discreet }: { o: PigmaOffer; active: boolean; onSelect: (id: string) => void; note?: string; badge?: string; discreet?: boolean }) => {
+const OfferCard = ({ o, active, onSelect, note, badge, delivery }: { o: PigmaOffer; active: boolean; onSelect: (id: string) => void; note?: string; badge?: string; delivery?: string }) => {
   const full = o.boxes * pigmaUnitPrice();
   const label = badge !== undefined ? badge : o.badge;
   return (
     <button type="button" role="radio" aria-checked={active} onClick={() => onSelect(o.id)} data-offer={o.id}
-      className={`pg-offer relative w-full rounded-2xl border-2 ${discreet && !active ? 'p-2.5 opacity-90' : 'p-3'} flex items-center gap-3 text-right transition-all ${
+      className={`pg-offer relative w-full rounded-2xl border-2 p-3 flex items-center gap-3 text-right transition-all ${
         active ? 'border-[#1366d6] bg-sky-50 shadow-sm' : 'border-slate-200 bg-white'}`}>
       {(label || note) && (
         <span className="absolute -top-2.5 left-3 text-[11px] font-black text-[#0B1B3F] bg-[#FFD60A] rounded-full px-2.5 py-0.5 shadow flex items-center gap-1">
@@ -48,7 +50,7 @@ const OfferCard = ({ o, active, onSelect, note, badge, discreet }: { o: PigmaOff
       <span className="flex-1 min-w-0">
         <span className="block text-[16px] font-black text-[#0B1B3F] leading-snug">{o.title}</span>
         <span className="block text-[12.5px] font-semibold text-slate-500">
-          {o.boxes === 1 ? '1,4 كلغ' : `${o.boxes} علب`} · {o.freeDelivery ? <b className="text-emerald-600">توصيل مجاني</b> : '+ التوصيل'}
+          {o.boxes === 1 ? '1,4 كلغ' : `${o.boxes} علب`} · {o.freeDelivery ? <b className="text-emerald-600">توصيل مجاني</b> : delivery ? `+ التوصيل ${delivery}` : '+ التوصيل'}
         </span>
       </span>
       <span className="text-left shrink-0">
@@ -102,6 +104,9 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
   const wilayaPrice = formData.wilaya ? DELIVERY_PRICES[formData.wilaya] : null;
   const deliveryPrice = offer.freeDelivery ? 0 : (wilayaPrice ? wilayaPrice[formData.deliveryType] : 0);
   const totalPrice = offer.price + deliveryPrice;
+  const deskMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.desk));
+  const homeMin = Math.min(...Object.values(DELIVERY_PRICES).map(p => p.home));
+  const deliveryFrom = highlightOffer ? `(من ${da(Math.min(deskMin, homeMin))})` : undefined;
 
   const update = (patch: Partial<typeof formData>) => {
     setFormData(prev => ({ ...prev, ...patch }));
@@ -219,15 +224,17 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
 
       {/* Choix de l'offre */}
       <div className="space-y-3 mb-4" role="radiogroup" aria-label="اختار العرض">
-        {combo && <OfferCard o={combo} active onSelect={onOfferChange} note="اقتراح الحاسبة" />}
+        {combo && <OfferCard o={combo} active onSelect={onOfferChange} note="اقتراح الحاسبة" delivery={highlightOffer ? deliveryFrom : undefined} />}
         {PIGMA_OFFERS.map(o => <React.Fragment key={o.id}>{highlightOffer
-          ? <OfferCard o={o} active={o.id === offerId} onSelect={onOfferChange} badge={o.id === highlightOffer.id ? highlightOffer.badge : ''} discreet={o.id !== highlightOffer.id} />
+          ? <OfferCard o={o} active={o.id === offerId} onSelect={onOfferChange} badge={o.id === highlightOffer.id ? highlightOffer.badge : ''} delivery={deliveryFrom} />
           : <OfferCard o={o} active={o.id === offerId} onSelect={onOfferChange} />}</React.Fragment>)}
       </div>
       {highlightOffer && !formData.wilaya && !offer.freeDelivery && (
-        <p className="-mt-2 mb-4 text-center text-[14px] font-bold text-slate-600 flex items-center justify-center gap-1.5">
-          <Truck size={16} className="text-[#1366d6]" /> التوصيل من {da(Math.min(...Object.values(DELIVERY_PRICES).map(p => p.home)))}
-        </p>
+        <div className="-mt-1 mb-4 rounded-2xl border border-sky-100 bg-sky-50/60 px-3 py-2.5 text-center">
+          <p className="text-[14px] font-black text-[#0B1B3F] flex items-center justify-center gap-1.5"><Truck size={16} className="text-[#1366d6]" /> سعر التوصيل حسب الولاية</p>
+          <p className="mt-0.5 text-[13px] font-bold text-slate-600">للمكتب من {da(deskMin)} · للدار من {da(homeMin)}</p>
+          <p className="text-[12px] font-semibold text-slate-500">اختار ولايتك تحت باش تشوف السعر بالضبط</p>
+        </div>
       )}
 
       <div className="space-y-3">
@@ -297,6 +304,19 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
         </div>
 
         {/* Récapitulatif */}
+        {highlightOffer ? (
+          <div className="rounded-2xl bg-sky-50 px-4 py-3 text-[14px]" aria-live="polite">
+            <div className="flex justify-between gap-3 font-semibold text-slate-600"><span>السلعة ({offer.title})</span><span className="font-black text-slate-800 shrink-0">{da(offer.price)}</span></div>
+            <div className="mt-1 flex justify-between gap-3 font-semibold text-slate-600">
+              <span>التوصيل {offer.freeDelivery ? '' : wilayaPrice ? `${formData.deliveryType === 'home' ? 'للدار' : 'للمكتب'} (${formData.wilaya.replace(/^\d+ - /, '')})` : ''}</span>
+              <span className="font-black shrink-0">{offer.freeDelivery ? <span className="text-emerald-600">مجاني</span> : wilayaPrice ? <span className="text-slate-800">{da(deliveryPrice)}</span> : <span className="text-slate-500 text-[13px]">اختار الولاية</span>}</span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-sky-200 flex items-center justify-between">
+              <span className="font-black text-[#0B1B3F]">المجموع عند الاستلام</span>
+              <span className="text-[24px] font-black text-[#0B4FB3]">{da(totalPrice)}{!offer.freeDelivery && !wilayaPrice && <span className="text-[13px] text-slate-500"> + التوصيل</span>}</span>
+            </div>
+          </div>
+        ) : (
         <div className="flex items-center justify-between rounded-2xl bg-sky-50 px-4 py-3" aria-live="polite">
           <span className="text-[13px] font-semibold text-slate-500 leading-tight">
             المجموع<br />
@@ -304,6 +324,7 @@ const CheckoutFormPigma = ({ offerId, onOfferChange, sourceTag, onPurchase, onFi
           </span>
           <span className="text-[26px] font-black text-[#0B4FB3]">{da(totalPrice)}</span>
         </div>
+        )}
 
         {submitError && (
           <div role="alert" className="rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold p-3 flex items-start gap-2">

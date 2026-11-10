@@ -71,7 +71,8 @@ export function toSheetOrder(id: string, o: any): SheetOrder {
       `${total} ${unit}`,
       '',
       desk ? 'STOP DESK' : 'A DOMICILE',
-      '',
+      // notes : page d'origine pour les landing pages dédiées (ex. « lp-400g »), sinon vide
+      typeof o.source === 'string' && /^lp-/.test(o.source) ? o.source : '',
     ],
   };
 }

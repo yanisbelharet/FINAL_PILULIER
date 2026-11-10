@@ -61,7 +61,14 @@
     </script>
     <!-- Preload du hero des landing pages /lp/ (n'affecte pas les autres pages) -->
     <script>
-      if (location.pathname.indexOf('/lp/') === 0) {
+      if (location.pathname.indexOf('/lp/pigma-400g') === 0) {
+        // image principale de la page TikTok « 400 غرام مجانا » (même srcset que la balise <img>)
+        var h = document.createElement('link');
+        h.rel = 'preload'; h.as = 'image'; h.setAttribute('fetchpriority', 'high');
+        h.setAttribute('imagesrcset', '/lp-assets/pigma400/hero-400g-640.webp 640w, /lp-assets/pigma400/hero-400g.webp 1080w');
+        h.setAttribute('imagesizes', '(max-width: 576px) 100vw, 576px');
+        document.head.appendChild(h);
+      } else if (location.pathname.indexOf('/lp/') === 0) {
         var l = document.createElement('link');
         l.rel = 'preload'; l.as = 'image'; l.setAttribute('fetchpriority', 'high');
         l.href = location.pathname.indexOf('/lp/proelastic') === 0 ? '/lp-assets/proelastic/pot-1kg.webp'

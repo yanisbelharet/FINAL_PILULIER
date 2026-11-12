@@ -17,8 +17,9 @@ const LandingPagePigma16 = lazy(() => import('./LandingPagePigma16'));
 const LandingPage400g = lazy(() => import('./LandingPage400g'));
 const LandingPageMain = lazy(() => import('./LandingPageMain'));
 const LandingPageDiagnostic = lazy(() => import('./LandingPageDiagnostic'));
+const LandingPageVisuel = lazy(() => import('./LandingPageVisuel'));
 // Page rapide sans pixels Facebook / Google (seul TikTok PIGMA1, chargé dans index.html)
-const NO_EXTRA_PIXELS_PATHS = ['/lp/pigma-main', '/lp/pigma-diagnostic'];
+const NO_EXTRA_PIXELS_PATHS = ['/lp/pigma-main', '/lp/pigma-diagnostic', '/lp/pigma-visuel'];
 const noExtraPixels = () => typeof window !== 'undefined' && NO_EXTRA_PIXELS_PATHS.some(p => window.location.pathname.indexOf(p) === 0);
 
 // Pages internes (dashboard /admin et app mobile /app) : pas de pixels ni de comptage de visites
@@ -413,6 +414,7 @@ export default function App() {
           <Route path="/lp/proelastic" element={<LandingPageProelasticLP config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/pigma-stop-fuites" element={<LandingPagePigma config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/pigma-16kg" element={<LandingPagePigma16 config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
+          <Route path="/lp/pigma-visuel" element={<LandingPageVisuel config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/pigma-diagnostic" element={<LandingPageDiagnostic config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/pigma-main" element={<LandingPageMain config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />
           <Route path="/lp/pigma-400g" element={<LandingPage400g config={config} onPurchase={(price, product, formData) => handlePurchase(price, product, formData)} />} />

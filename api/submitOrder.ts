@@ -136,8 +136,8 @@ export default async function handler(req, res) {
         const basePrice = productPrice !== undefined ? Number(productPrice) : (Number(price) - deliveryPrice);
 
         let ttPixels = configData.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
-        // /lp/pigma-main et /lp/pigma-diagnostic : uniquement le pixel PIGMA1
-        if (source === 'lp-main' || source === 'lp-diagnostic') ttPixels = ttPixels.filter((p: string) => p === 'DBJA2NRC77U3VQV6KJT0');
+        // /lp/pigma-main, /lp/pigma-diagnostic et /lp/pigma-visuel : uniquement le pixel PIGMA1
+        if (source === 'lp-main' || source === 'lp-diagnostic' || source === 'lp-visuel') ttPixels = ttPixels.filter((p: string) => p === 'DBJA2NRC77U3VQV6KJT0');
         for (const pixel of ttPixels) {
           const ttPayload = {
             pixel_code: pixel,

@@ -14,8 +14,8 @@
           ;n.type="text/javascript",n.async=!0,n.fetchPriority="high",n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
 
           ttq.load('DBJA2NRC77U3VQV6KJT0');
-          // /lp/pigma-main et /lp/pigma-diagnostic : uniquement PIGMA1 (pas Monabih1)
-          if (!/^\/lp\/pigma-(main|diagnostic)/.test(location.pathname)) ttq.load('D2RO1VRC77U9PGFLCGLG');
+          // /lp/pigma-main, /lp/pigma-diagnostic et /lp/pigma-visuel : uniquement PIGMA1 (pas Monabih1)
+          if (!/^\/lp\/pigma-(main|diagnostic|visuel)/.test(location.pathname)) ttq.load('D2RO1VRC77U9PGFLCGLG');
           ttq.page();
         }(window, document, 'ttq');
       }
@@ -62,7 +62,14 @@
     </script>
     <!-- Preload du hero des landing pages /lp/ (n'affecte pas les autres pages) -->
     <script>
-      if (location.pathname.indexOf('/lp/pigma-400g') === 0) {
+      if (location.pathname.indexOf('/lp/pigma-visuel') === 0) {
+        // premier visuel de /lp/pigma-visuel (même srcset que la balise <img>)
+        var v = document.createElement('link');
+        v.rel = 'preload'; v.as = 'image'; v.setAttribute('fetchpriority', 'high');
+        v.setAttribute('imagesrcset', '/lp-assets/pigma-visuel/1-accroche-640.webp 640w, /lp-assets/pigma-visuel/1-accroche.webp 1080w');
+        v.setAttribute('imagesizes', '(max-width: 576px) 100vw, 576px');
+        document.head.appendChild(v);
+      } else if (location.pathname.indexOf('/lp/pigma-400g') === 0) {
         // image principale de la page TikTok « 400 غرام مجانا » (même srcset que la balise <img>)
         var h = document.createElement('link');
         h.rel = 'preload'; h.as = 'image'; h.setAttribute('fetchpriority', 'high');

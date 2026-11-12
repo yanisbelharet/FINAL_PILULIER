@@ -25,7 +25,9 @@ export default async function handler(req, res) {
 
   try {
     const { name, phone, wilaya, commune, deliveryType, price, eventId, productId, productName, productPrice, quantity,
-      address, bundleId, bundleTitle, productTotal, currency, country, source, utm } = req.body;
+      address, bundleId, bundleTitle, productTotal, currency, country, source, utm, diagnostic } = req.body;
+    // résumé du questionnaire de /lp/pigma-diagnostic (problème · surface · méthode), texte court sans caractères Markdown
+    const diag = typeof diagnostic === 'string' ? diagnostic.replace(/[*_`\[\]\n\r]/g, ' ').slice(0, 160).trim() : '';
 
     // Config lue en parallèle de l'enregistrement (Google Sheets + TikTok Events API)
     const configPromise = getDoc(doc(db, "config", "main"))
@@ -50,6 +52,7 @@ export default async function handler(req, res) {
       ...(currency ? { currency } : {}),
       ...(country ? { country } : {}),
       ...(source ? { source } : {}),
+      ...(diag ? { diagnostic: diag } : {}),
       // paramètres UTM / identifiants de clic transmis par la landing page (chaînes courtes uniquement)
       ...(utm && typeof utm === 'object' ? { utm: Object.fromEntries(Object.entries(utm).filter(([k, v]) => /^[a-z_]{2,20}$/.test(k) && typeof v === 'string').slice(0, 12).map(([k, v]) => [k, String(v).slice(0, 200)])) } : {}),
       ...(eventId ? { eventId } : {}),
@@ -90,7 +93,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, warning: "Telegram not configured" });
     }
 
-    const text = `🛒 *طلبية جديدة!*\n📦 *الكمية:* ${quantity || 1}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج${typeof source === 'string' && /^lp-/.test(source) ? `\n🔗 *الصفحة:* ${source}` : ''}`;
+    const text = `🛒 *طلبية جديدة!*\n📦 *الكمية:* ${quantity || 1}\n👤 *الاسم:* ${name}\n📞 *رقم الهاتف:* ${phone}\n📍 *الولاية:* ${wilaya}\n🏙️ *البلدية:* ${commune}\n🚚 *نوع التوصيل:* ${deliveryType === 'home' ? 'لباب المنزل' : 'للمكتب (Stop Desk)'}\n💰 *السعر الإجمالي:* ${price} د.ج${typeof source === 'string' && /^lp-/.test(source) ? `\n🔗 *الصفحة:* ${source}` : ''}${diag ? `\n🩺 *التشخيص:* ${diag}` : ''}`;
 
     const sent = await Promise.all(chatIds.map(async chatId => {
       try {
@@ -133,8 +136,8 @@ export default async function handler(req, res) {
         const basePrice = productPrice !== undefined ? Number(productPrice) : (Number(price) - deliveryPrice);
 
         let ttPixels = configData.tiktokPixelId.split(',').map((p: string) => p.trim()).filter(Boolean);
-        // /lp/pigma-main : uniquement le pixel PIGMA1
-        if (source === 'lp-main') ttPixels = ttPixels.filter((p: string) => p === 'DBJA2NRC77U3VQV6KJT0');
+        // /lp/pigma-main et /lp/pigma-diagnostic : uniquement le pixel PIGMA1
+        if (source === 'lp-main' || source === 'lp-diagnostic') ttPixels = ttPixels.filter((p: string) => p === 'DBJA2NRC77U3VQV6KJT0');
         for (const pixel of ttPixels) {
           const ttPayload = {
             pixel_code: pixel,
